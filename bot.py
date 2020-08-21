@@ -6,31 +6,29 @@ import aiohttp
 from random import choice
 from string import Template
 
-#Kinda urgent:
-#TODO: Figure out if the _nowait keyword should be used (is it operating in sync now?)
-#TODO: Setting: Disable ?link, pass through whisper
+# Kinda urgent:
+# TODO: Figure out if the _nowait keyword should be used (is it operating in sync now?)
+# TODO: Setting: Disable ?link, pass through whisper
 #       - Bot can whisper to users if apply succeeded
-#TODO: Persistent channel settings
+# TODO: Persistent channel settings
 #       - aiosqlite, or whatever it's called. async storage.
-#TODO: (DONE BUT TEST THIS) Pleb who applies, subscribes, then reapplies should cause a bug of altering someone else's row on sub sheet
-#TODO: On format setting change, modify sheet accordingly
-#TODO: Cloud hosting!
-#TODO: Update help on bot and about page
-#TODO: Git setup
-#TODO: Sheet tests
+# TODO: (DONE BUT TEST THIS) Pleb who applies, subscribes, then reapplies should cause a bug of altering someone else's row on sub sheet
+# TODO: On format setting change, modify sheet accordingly
+# TODO: Sheet tests
 
-#Kinda not so urgent:
-#TODO: users_on_sheet *should* go by user id, not display_name
+# Kinda not so urgent:
+# TODO: Cloud hosting!
+# TODO: users_on_sheet *should* go by user id, not display_name
 #       - But: requires DB in order to restore on restart
-#TODO: ?set procedure is icky
-#TODO: logging
-#TODO: Custom prefixes
-#TODO: setting for variants
-#TODO: Auto-follow (for followers-only chat)
+# TODO: ?set procedure is icky
+#       -@setting deco: verify value (pre) and update DB (post)
+# TODO: logging
+# TODO: Custom prefixes?
+# TODO: more game types
+# TODO: Auto-follow (for followers-only chat)
 #       - maybe not - would need some scope thing in auth. manual works for now
-#TODO: Use errors.BadArgument, possibly in custom Command classes, to define valid settings?
-#TODO: Custom Command (at least) for apply, to use @error and separate away the error handling.
-#TODO: Dynamic header (so that set_site can alter one column name, set_game another)
+# TODO: Custom Command (at least) for apply, to use @error and separate away the error handling.
+# TODO: Dynamic header (so that set_site can alter one column name, set_game another)
 
 
 greetings = [
@@ -68,7 +66,7 @@ class SubBatBot(Bot):
         self.sheets = {}
 
         # create a template for help message (prefix may vary)
-        public_commands = ['help', 'clear', 'link', 'apply', 'leave', 'set']
+        public_commands = ['apply', 'set', 'clear', 'link', 'help', 'leave']
         docstrings = [cmd._callback.__doc__ for cmd in self.commands.values() if cmd.name in public_commands]
         command_help = '; '.join("${prefix}" + doc for doc in docstrings)
         self.help_msg_template = Template(f"Commands: {command_help}")
@@ -151,7 +149,7 @@ class SubBatBot(Bot):
 
     @command(name='leave')
     async def leave(self, ctx, channel_name=None):
-        """leave - Make the bot leave the channel (mods)"""
+        """leave - Make the bot leave the channel"""
         if ctx.author.id == SED_ID:
             await self.leave_channel(channel_name)
         else:
@@ -159,7 +157,7 @@ class SubBatBot(Bot):
 
     @command(name='clear')
     async def clear(self, ctx):
-        """clear - Reset the spreadsheet (mods)"""
+        """clear - Reset the spreadsheet"""
         sheet = self.sheets[ctx.channel.name]
         await sheet.clear()
 
@@ -176,7 +174,7 @@ class SubBatBot(Bot):
 
     @command(name='set')
     async def set(self, ctx, setting: str, value: str):
-        """set setting value - Change settings (mods). Use without arguments for current settings"""
+        """set setting value - Change settings. Use without arguments for current settings"""
         sheet = self.sheets[ctx.channel.name]
         try:
             set_method = getattr(sheet, f"set_{setting}")
