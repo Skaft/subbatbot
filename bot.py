@@ -17,7 +17,6 @@ from string import Template
 # TODO: Sheet tests
 
 # Kinda not so urgent:
-# TODO: Cloud hosting!
 # TODO: users_on_sheet *should* go by user id, not display_name
 #       - But: requires DB in order to restore on restart
 # TODO: ?set procedure is icky
@@ -43,7 +42,7 @@ greetings = [
     "/me *sneaks in*",
 ]
 
-DEV_MODE = True
+DEV_MODE = False
 SED_ID = 88128608
 
 
