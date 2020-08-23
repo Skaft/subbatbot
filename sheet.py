@@ -1,11 +1,28 @@
-import gspread_asyncio
 from oauth2client.service_account import ServiceAccountCredentials
-from gspread.exceptions import SpreadsheetNotFound
-from re import search
+from oauth2client import crypt, GOOGLE_REVOKE_URI
 
+import gspread_asyncio
+from gspread.exceptions import SpreadsheetNotFound
+
+from re import search
+import os
 
 def get_creds():
-    return ServiceAccountCredentials.from_json_keyfile_name("sheet_creds.json")
+    scopes = ''
+    service_account_email = os.environ['goog_client_email']
+    private_key_pkcs8_pem = os.environ['goog_private_key'].replace(r"\n", "\n")
+    private_key_id = os.environ['goog_private_key_id']
+    client_id = os.environ['goog_client_id']
+    token_uri = os.environ['goog_token_uri']
+    revoke_uri = GOOGLE_REVOKE_URI
+    signer = crypt.Signer.from_string(private_key_pkcs8_pem)
+    credentials = ServiceAccountCredentials(
+        service_account_email, signer, scopes=scopes,
+        private_key_id=private_key_id, client_id=client_id,
+        token_uri=token_uri, revoke_uri=revoke_uri
+    )
+    credentials._private_key_pkcs8_pem = private_key_pkcs8_pem
+    return credentials
 
 
 agcm = gspread_asyncio.AsyncioGspreadClientManager(get_creds)
@@ -15,6 +32,7 @@ class BattleSheet:
     settings_help_string = "?set site lichess (or chess.com); " \
                            "?set format bracket (or space, or none); " \
                            "?set game bullet (or rapid, or blitz)"
+
     def __init__(self, channel_name):
         # Better to create through the async open method, which includes the actual sheet object
         self.channel_name = channel_name
