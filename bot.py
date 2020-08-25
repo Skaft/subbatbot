@@ -42,7 +42,7 @@ greetings = [
     "/me *sneaks in*",
 ]
 
-DEV_MODE = False
+DEV_MODE = os.environ['BOT_NICK'].lower() == 'sbbdev'
 SED_ID = 88128608
 
 
@@ -77,7 +77,7 @@ class SubBatBot(Bot):
             'chess.com': ChessComAPI(self.session)
         }
         if DEV_MODE:
-            channel_names = ['subbatbot', 'sedsarq']
+            channel_names = [self.nick]
         else:
             # TODO: Collect initial channel list from DB instead
             channel_names = await all_sheet_names()
@@ -216,7 +216,6 @@ class SubBatBot(Bot):
 
 
 if __name__ == "__main__":
-
     bot = SubBatBot(
         irc_token=os.environ['TMI_TOKEN'],
         client_id=os.environ['CLIENT_ID'],
