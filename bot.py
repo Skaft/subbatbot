@@ -82,13 +82,14 @@ class SubBatBot(Bot):
             # TODO: Collect initial channel list from DB instead
             channel_names = await all_sheet_names()
         for channel_name in channel_names:
-            await self.join_channel(channel_name)
+            await self.join_channel(channel_name, greet=DEV_MODE)
         print(f"{os.environ['BOT_NICK']} is online!")
 
-    async def join_channel(self, channel_name):
+    async def join_channel(self, channel_name, greet=False):
         await self.join_channels([channel_name])
         self.sheets[channel_name] = await BattleSheet.open(channel_name)
-        await self._ws.send_privmsg(channel_name, choice(greetings))
+        if greet:
+            await self._ws.send_privmsg(channel_name, choice(greetings))
 
     async def leave_channel(self, channel_name):
         await self.part_channels([channel_name])
@@ -140,7 +141,7 @@ class SubBatBot(Bot):
         # Giving myself the option to make it join others' channels
         if ctx.author.id != SED_ID:
             channel_name = ctx.author.name.lower()
-        await self.join_channel(channel_name)
+        await self.join_channel(channel_name, greet=True)
         if channel_name in self.sheets:
             await ctx.send(f"@{ctx.author.display_name}: I should be there now!")
         else:
