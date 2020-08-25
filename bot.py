@@ -113,11 +113,8 @@ class SubBatBot(Bot):
                 msg = f"Only the {pre}apply command is available to non-moderators, sorry!"
                 return await ctx.send(f"@{name}: {msg}")
         elif isinstance(error, errors.CommandNotFound):
-            if user.is_mod:
-                msg = f"Type {pre}help to see available commands, or visit my Twitch page for details."
-            else:
-                msg = f'{pre}apply username <-- Type this, using your own chess username, to apply!'
-            return await ctx.send(f"@{name}: {msg}")
+            # just ignore this error as it doesn't have to be someone trying to use the bot
+            return
         elif isinstance(error, errors.MissingRequiredArgument):
             # using apply badly
             if error.param.name == 'chess_name':
