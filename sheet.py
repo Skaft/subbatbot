@@ -29,9 +29,10 @@ agcm = gspread_asyncio.AsyncioGspreadClientManager(get_creds)
 
 
 class BattleSheet:
-    settings_help_string = "?set site lichess (or chess.com); " \
-                           "?set format bracket (or space, or none); " \
-                           "?set game bullet (or rapid, or blitz)"
+    settings_help_string = "Available settings: " \
+                           "?set site lichess (or chess.com); " \
+                           "?set game bullet (or rapid, or blitz)" \
+                           "?set format bracket (or space, or none); "
 
     def __init__(self, channel_name):
         # Better to create through the async open method, which includes the actual sheet object

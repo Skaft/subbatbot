@@ -7,16 +7,15 @@ from random import choice
 from string import Template
 
 # Kinda urgent:
-# TODO: Figure out if the _nowait keyword should be used (is it operating in sync now?)
 # TODO: Setting: Disable ?link, pass through whisper
 #       - Bot can whisper to users if apply succeeded
 # TODO: Persistent channel settings
 #       - some heroku option. Not sqlite since heroku clears file system daily
-# TODO: (DONE BUT TEST THIS) Pleb who applies, subscribes, then reapplies should cause a bug of altering someone else's row on sub sheet
 # TODO: On format setting change, modify sheet accordingly
 # TODO: Sheet tests
 
 # Kinda not so urgent:
+# TODO: Figure out if the _nowait keyword should be used (is it operating in sync now?)
 # TODO: users_on_sheet *should* go by user id, not display_name
 #       - But: requires DB in order to restore on restart
 # TODO: ?set procedure is icky
