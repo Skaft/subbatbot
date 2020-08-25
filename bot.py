@@ -108,7 +108,6 @@ class SubBatBot(Bot):
         user = ctx.author
         name = user.display_name
         pre = ctx.prefix
-        cmd = f"{pre}{ctx.command.name}"
         if isinstance(error, errors.CheckFailure):
             if str(error).endswith('mod_or_sed'):
                 msg = f"Only the {pre}apply command is available to non-moderators, sorry!"
