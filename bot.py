@@ -11,7 +11,7 @@ from string import Template
 # TODO: Setting: Disable ?link, pass through whisper
 #       - Bot can whisper to users if apply succeeded
 # TODO: Persistent channel settings
-#       - aiosqlite, or whatever it's called. async storage.
+#       - some heroku option. Not sqlite since heroku clears file system daily
 # TODO: (DONE BUT TEST THIS) Pleb who applies, subscribes, then reapplies should cause a bug of altering someone else's row on sub sheet
 # TODO: On format setting change, modify sheet accordingly
 # TODO: Sheet tests
@@ -201,9 +201,10 @@ class SubBatBot(Bot):
         sheet = self.sheets[ctx.channel.name]
         site = sheet.site
         api = self.apis[site]
+        game_type = sheet.game
         try:
             # regrabbing chess_name to (possibly) collect correct casing from lookup
-            chess_name, rating, *peak_data = await api.lookup(chess_name, sheet.game)
+            chess_name, rating, *peak_data = await api.lookup(chess_name, game_type)
         except UserNotFound:
             await ctx.send(f"@{twitch_name}: Couldn't find player \"{chess_name}\" on {site}!")
         except APIError as e:
@@ -213,7 +214,14 @@ class SubBatBot(Bot):
             print(f"Unexpected error: {e}")
             await ctx.send(f"Unexpected error, please let Sedsarq know!")
         else:
-            await sheet.add_data(twitch_name, chess_name, rating, *peak_data, sub=sub)
+            result = await sheet.add_data(twitch_name, chess_name, rating, *peak_data, sub=sub)
+            if result == 'new':
+                await ctx.send(f"Thanks @{twitch_name}! {chess_name} ({rating}) has applied.")
+            elif result == 'updated':
+                await ctx.send(f"@{twitch_name}: Details updated! ({chess_name}, {rating})")
+            elif result == 'moved':
+                role = 'sub' if sub else 'non-sub'
+                await ctx.send(f"@{twitch_name}: You're now on the sheet as a {role}.")
 
 
 if __name__ == "__main__":

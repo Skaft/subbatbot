@@ -143,14 +143,18 @@ class BattleSheet:
             prev_ws, prev_row_nr = last_entry
             if ws == prev_ws:
                 await self._replace(ws, prev_row_nr, row_values)
+                res = 'updated'
 
             # user changed sub status
             else:
                 await prev_ws.delete_row(prev_row_nr)
                 await self._append(ws, twitch_name, row_values)
+                res = "moved"
         # append new row
         else:
             await self._append(ws, twitch_name, row_values)
+            res = "new"
+        return res
 
     async def _append(self, ws, user_id, row_values):
         ret = await ws.append_row(row_values)
