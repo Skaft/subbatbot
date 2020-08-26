@@ -81,13 +81,10 @@ class BattleSheet:
         agc = await agcm.authorize()
         try:
             self.sheet = await agc.open(self.channel_name)
-            print(f'opening old sheet for {self.channel_name}')
         except SpreadsheetNotFound:
-            print(f'making new sheet for {self.channel_name}')
             self.sheet = await self.new_sheet(self.channel_name)
             await self.refresh_headers()
         self.url = self.sheet.ss.url
-        print(f'url for {self.channel_name} is', self.url)
 
     @staticmethod
     async def new_sheet(sheet_name):

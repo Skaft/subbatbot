@@ -16,6 +16,7 @@ from globals import *
 # TODO: Sheet tests
 
 # Kinda not so urgent:
+# TODO: Leaving and rejoining causes a worksheet caching error.
 # TODO: Switching from chess.com to lichess leaves peak columns in place
 # TODO: Error handling on DB
 # TODO: Setting: Disable ?link, pass through whisper
