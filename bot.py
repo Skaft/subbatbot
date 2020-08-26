@@ -16,6 +16,7 @@ from globals import *
 # TODO: Sheet tests
 
 # Kinda not so urgent:
+# TODO: Switching from chess.com to lichess leaves peak columns in place
 # TODO: Error handling on DB
 # TODO: Setting: Disable ?link, pass through whisper
 #       - Bot can whisper to users if apply succeeded
@@ -80,8 +81,7 @@ class SubBatBot(Bot):
         if DEV_MODE:
             channel_names = [self.nick]
         else:
-            # TODO: Collect initial channel list from DB instead
-            channel_names = await all_sheet_names()
+            channel_names = self.db.get_all_channels()
         for channel_name in channel_names:
             await self.join_channel(channel_name, greet=DEV_MODE)
         print(f"{os.environ['BOT_NICK']} is online!")
