@@ -4,7 +4,7 @@ import psycopg2
 from globals import DEV_MODE
 
 
-class DB:
+class SettingsDatabase:
     defaults = {
         'site': 'chess.com',
         'game': 'blitz',
@@ -19,18 +19,18 @@ class DB:
             self.conn = psycopg2.connect(db_conn_string, sslmode='require')
         self.cur = self.conn.cursor()
         self._sql_insert_template = None
+        self.cur.execute("SELECT * FROM settings LIMIT 0;")
+        self.col_names = [desc.name for desc in self.cur.description]
         self._make_templates()
 
     def _make_templates(self):
         # make sql string templates
-        self.cur.execute("SELECT * FROM settings LIMIT 0;")
-        col_names = [desc.name for desc in self.cur.description]
-        cols = ', '.join(col_names)
-        placeholders = ', '.join(['%s'] * len(col_names))
+        cols = ', '.join(self.col_names)
+        placeholders = ', '.join(['%s'] * len(self.col_names))
         self._sql_insert_template = f"INSERT INTO settings ({cols}) VALUES ({placeholders});"
 
     def add_channel(self, channel):
-        values = (channel, *DB.defaults.values())
+        values = (channel, *SettingsDatabase.defaults.values())
         self._commit(self._sql_insert_template, values)
 
     def delete_channel(self, channel):
@@ -44,6 +44,15 @@ class DB:
         sql = f"UPDATE settings SET {setting} = %s WHERE channel = %s;"
         self._commit(sql, (value, channel))
 
+    def get_settings(self, channel):
+        self.cur.execute("SELECT * FROM settings WHERE channel = %s;", (channel,))
+        stored = self.cur.fetchall()
+        if stored:
+            return dict(zip(self.col_names[1:], stored[0][1:]))
+        else:
+            self.add_channel(channel)
+            return {**SettingsDatabase.defaults}
+
     def get_all_records(self):
         self.cur.execute("SELECT * FROM settings;")
         return self.cur.fetchall()
@@ -55,3 +64,7 @@ class DB:
     def _commit(self, sql, values):
         self.cur.execute(sql, values)
         self.conn.commit()
+
+if __name__ == '__main__':
+    db = SettingsDatabase()
+    print(db.get_all_records())

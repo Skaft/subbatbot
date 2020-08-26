@@ -34,9 +34,10 @@ class BattleSheet:
                            "?set game bullet (or rapid, or blitz)" \
                            "?set format bracket (or space, or none); "
 
-    def __init__(self, channel_name):
+    def __init__(self, channel_name, settings):
         # Better to create through the async open method, which includes the actual sheet object
         self.channel_name = channel_name
+
         self.sheet = None
         self.last_col = None
         self._header_data = None
@@ -44,27 +45,36 @@ class BattleSheet:
         self.url = None
 
         # settings user can modify
-        self.format = None
-        self.site = None
-        self.game = None
+        self.format = settings['format']
+        self.site = settings['site']
+        self.game = settings['game']
 
     @property
     def current_settings(self):
-        return f"format={self.format}, site={self.site}, game={self.game}"
+        return f"site={self.site}, game={self.game}, format={self.format}"
 
     @classmethod
-    async def open(cls, channel_name):
-        battle_sheet = cls(channel_name)
-        await battle_sheet._connect_settings()
+    async def open(cls, channel_name, settings):
+        battle_sheet = cls(channel_name, settings)
+        battle_sheet._create_header_data()
         await battle_sheet._connect_sheet()
         await battle_sheet.refresh_users()
         return battle_sheet
 
-    async def _connect_settings(self):
-        #TODO: collect from DB here, defaults below
-        await self.set_format('none')
-        await self.set_site('chess.com')
-        self.game = 'blitz'
+    def _create_header_data(self):
+        """Prepare data used to refresh the sheet header"""
+        rating_title = f"{self.game} rating".capitalize()
+        if self.site == 'chess.com':
+            header = ['Twitch', 'Chess.com', rating_title, 'Formatted', 'Peak rating', 'Peak date']
+        elif self.site == 'lichess':
+            header = ['Twitch', 'Lichess', rating_title, 'Formatted']
+        else:
+            raise ValueError("Unknown site")
+        self.last_col = chr(64 + len(header))
+        self._header_data = {
+            'range': f"A1:{self.last_col}1",
+            'values': [header]
+        }
 
     async def _connect_sheet(self):
         agc = await agcm.authorize()
@@ -72,23 +82,18 @@ class BattleSheet:
             self.sheet = await agc.open(self.channel_name)
         except SpreadsheetNotFound:
             self.sheet = await self.new_sheet(self.channel_name)
+            await self.refresh_headers()
         self.url = self.sheet.ss.url
 
-    async def new_sheet(self, sheet_name):
+    @staticmethod
+    async def new_sheet(sheet_name):
         agc = await agcm.authorize()
         sheet = await agc.create(sheet_name)
         sheet.ss.share(None, perm_type='anyone', role='reader', notify=False, with_link=True)
         ws1 = await sheet.get_worksheet(0)
         ws1.ws.update_title('Subs')
-        ws2 = await sheet.add_worksheet('Not subs', 100, 28)
-        await self.make_header(ws1)
-        await self.make_header(ws2)
+        await sheet.add_worksheet('Not subs', 100, 28)
         return sheet
-
-    async def make_header(self, worksheet):
-        await worksheet.batch_update([self._header_data])
-        # TODO: can this formatting line be awaited?
-        worksheet.ws.format(self._header_data['range'], {"textFormat": {"bold": True}})
 
     async def set_format(self, value):
         if value == self.format:
@@ -102,18 +107,11 @@ class BattleSheet:
     async def set_site(self, value):
         if value == self.site:
             return
-        if value == 'chess.com':
-            header = ['Twitch', 'Chess.com', 'Current rating', 'Formatted', 'Peak rating', 'Peak date']
-        elif value == 'lichess':
-            header = ['Twitch', 'Lichess', 'Current rating', 'Formatted']
-        else:
+        if value not in ('chess.com', 'lichess'):
             raise ValueError(f"{value} is not an available site. Try lichess or chess.com")
         self.site = value
-        self.last_col = chr(64 + len(header))
-        self._header_data = {
-            'range': f"A1:{self.last_col}1",
-            'values': [header]
-        }
+        self._create_header_data()
+        await self.refresh_headers()
 
     async def set_game(self, value):
         if value == self.game:
@@ -122,6 +120,8 @@ class BattleSheet:
         if value not in game_types:
             raise ValueError(f"Available game types are {', '.join(game_types)}")
         self.game = value
+        self._create_header_data()
+        await self.refresh_headers()
 
     async def add_data(self, twitch_name, chess_name, rating, *peak_values, sub=True):
         if self.format == 'none':
@@ -181,11 +181,18 @@ class BattleSheet:
             d.update(twitch_name_to_row_nr)
         self.users_on_sheet = d
 
+    async def refresh_headers(self):
+        worksheets = await self.sheet.worksheets()
+        for ws in worksheets:
+            await ws.batch_update([self._header_data])
+            # TODO: can this formatting line be awaited?
+            ws.ws.format(self._header_data['range'], {"textFormat": {"bold": True}})
+
     async def clear(self):
         worksheets = await self.sheet.worksheets()
         for ws in worksheets:
             await ws.clear()
-            await self.make_header(ws)
+        await self.refresh_headers()
         self.users_on_sheet = {}
 
 

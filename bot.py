@@ -1,20 +1,24 @@
 import os
-from twitchio.ext.commands import Bot, command, errors, check
-from aio_lookup import ChessComAPI, LichessAPI, APIError, UserNotFound
-from sheet import BattleSheet, all_sheet_names
-import aiohttp
 from random import choice
 from string import Template
 
+from twitchio.ext.commands import Bot, command, errors, check
+import aiohttp
+
+from aio_lookup import ChessComAPI, LichessAPI, APIError, UserNotFound
+from sheet import BattleSheet, all_sheet_names
+from db import SettingsDatabase
+from globals import *
+
+
 # Kinda urgent:
-# TODO: Setting: Disable ?link, pass through whisper
-#       - Bot can whisper to users if apply succeeded
-# TODO: Persistent channel settings
-#       - some heroku option. Not sqlite since heroku clears file system daily
 # TODO: On format setting change, modify sheet accordingly
 # TODO: Sheet tests
 
 # Kinda not so urgent:
+# TODO: Error handling on DB
+# TODO: Setting: Disable ?link, pass through whisper
+#       - Bot can whisper to users if apply succeeded
 # TODO: Figure out if the _nowait keyword should be used (is it operating in sync now?)
 # TODO: users_on_sheet *should* go by user id, not display_name
 #       - But: requires DB in order to restore on restart
@@ -41,9 +45,6 @@ greetings = [
     "/me *sneaks in*",
 ]
 
-DEV_MODE = os.environ['BOT_NICK'].lower() == 'sbbdev'
-SED_ID = 88128608
-
 
 def mod_or_sed(ctx):
     user = ctx.author
@@ -60,8 +61,8 @@ class SubBatBot(Bot):
         super().__init__(*args, **kwargs)
         self.add_check(mod_or_sed)
 
-        self.session = None
         self.sheets = {}
+        self.db = SettingsDatabase()
 
         # create a template for help message (prefix may vary)
         public_commands = ['apply', 'set', 'clear', 'link', 'help', 'leave']
@@ -70,10 +71,11 @@ class SubBatBot(Bot):
         self.help_msg_template = Template(f"Commands: {command_help}")
 
     async def event_ready(self):
-        self.session = aiohttp.ClientSession()  # needs to be created in async function, hence not in __init__
+        # session needs to be created in async function, hence not in __init__
+        session = aiohttp.ClientSession()
         self.apis = {
-            'lichess': LichessAPI(self.session),
-            'chess.com': ChessComAPI(self.session)
+            'lichess': LichessAPI(session),
+            'chess.com': ChessComAPI(session)
         }
         if DEV_MODE:
             channel_names = [self.nick]
@@ -86,7 +88,8 @@ class SubBatBot(Bot):
 
     async def join_channel(self, channel_name, greet=False):
         await self.join_channels([channel_name])
-        self.sheets[channel_name] = await BattleSheet.open(channel_name)
+        channel_settings = self.db.get_settings(channel_name)
+        self.sheets[channel_name] = await BattleSheet.open(channel_name, channel_settings)
         if greet:
             await self._ws.send_privmsg(channel_name, choice(greetings))
 
@@ -94,13 +97,14 @@ class SubBatBot(Bot):
         await self.part_channels([channel_name])
         sheet = self.sheets.pop(channel_name)
         await sheet.remove()
+        self.db.delete_channel(channel_name)
 
     async def event_message(self, msg):
         if msg.author.name.lower() == os.environ['BOT_NICK'].lower():
             return
         try:
             await self.handle_commands(msg)
-        except errors.MissingRequiredArgument as e:
+        except errors.MissingRequiredArgument as e:  # TODO: <-- why is this here?
             print(e)
 
     async def event_command_error(self, ctx, error):
@@ -170,10 +174,12 @@ class SubBatBot(Bot):
     @command(name='set')
     async def set(self, ctx, setting: str, value: str):
         """set setting value - Change settings. Use without arguments for current settings"""
-        sheet = self.sheets[ctx.channel.name]
+        channel_name = ctx.channel.name
+        sheet = self.sheets[channel_name]
         try:
             set_method = getattr(sheet, f"set_{setting}")
             await set_method(value)
+            self.db.update_setting(channel_name, setting, value)
 
         # not a valid setting
         except AttributeError:
@@ -184,8 +190,8 @@ class SubBatBot(Bot):
             await ctx.send(f"@{ctx.author.display_name}: {e}")
 
     @command(name='test')
-    async def test(self, ctx, arg='thing'):
-        print(ctx.author.display_name, ctx.author.id)
+    async def test(self, ctx):
+        print(os.environ['DATABASE_URL'])
 
     @command(name='apply', no_global_checks=True)
     async def apply(self, ctx, chess_name):
