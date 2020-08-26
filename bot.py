@@ -53,7 +53,7 @@ def mod_or_sed(ctx):
 
 
 def is_bot_channel(ctx):
-    return ctx.channel.name == 'subbatbot'
+    return ctx.channel.name.lower() == os.environ['BOT_NICK'].lower()
 
 
 class SubBatBot(Bot):
