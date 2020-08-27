@@ -14,9 +14,9 @@ from globals import *
 # Kinda urgent:
 # TODO: On format setting change, modify sheet accordingly
 # TODO: Sheet tests
+# TODO: Switching from chess.com to lichess leaves peak columns in place
 
 # Kinda not so urgent:
-# TODO: Switching from chess.com to lichess leaves peak columns in place
 # TODO: Error handling on DB
 # TODO: Setting: Disable ?link, pass through whisper
 #       - Bot can whisper to users if apply succeeded
@@ -79,7 +79,7 @@ class SubBatBot(Bot):
             'chess.com': ChessComAPI(session)
         }
         if DEV_MODE:
-            channel_names = [self.nick]
+            channel_names = [self.nick, 'sedsarq', 'subbatbot']
         else:
             channel_names = self.db.get_all_channels()
         for channel_name in channel_names:
@@ -113,8 +113,9 @@ class SubBatBot(Bot):
         pre = ctx.prefix
         if isinstance(error, errors.CheckFailure):
             if str(error).endswith('mod_or_sed'):
-                msg = f"Only the {pre}apply command is available to non-moderators, sorry!"
-                return await ctx.send(f"@{name}: {msg}")
+                return
+                #msg = f"Only the {pre}apply command is available to non-moderators, sorry!"
+                #return await ctx.send(f"@{name}: {msg}")
         elif isinstance(error, errors.CommandNotFound):
             # just ignore this error as it doesn't have to be someone trying to use the bot
             return
@@ -141,10 +142,10 @@ class SubBatBot(Bot):
         if ctx.author.id != SED_ID:
             channel_name = ctx.author.name.lower()
         await self.join_channel(channel_name, greet=True)
-        if channel_name in self.sheets:
-            await ctx.send(f"@{ctx.author.display_name}: I should be there now!")
-        else:
-            await ctx.send(f"@{ctx.author.display_name}: Hm, wait a bit and/or try again - something seems wrong")
+        #if channel_name in self.sheets:
+        #    await ctx.send(f"@{ctx.author.display_name}: I should be there now!")
+        #else:
+        #    await ctx.send(f"@{ctx.author.display_name}: Hm, wait a bit and/or try again - something seems wrong")
 
     @command(name='leave')
     async def leave(self, ctx, channel_name=None):
@@ -189,9 +190,11 @@ class SubBatBot(Bot):
         except ValueError as e:
             await ctx.send(f"@{ctx.author.display_name}: {e}")
 
-    @command(name='test')
-    async def test(self, ctx):
-        print(os.environ['DATABASE_URL'])
+    #@command(name='test')
+    #async def test(self, ctx):
+    #    for i in range(1, 16):
+    #        await ctx.send(f"{i}. Sorry for the spam, I'm testing rate limits")
+        #print(os.environ['DATABASE_URL'])
 
     @command(name='apply', no_global_checks=True)
     async def apply(self, ctx, chess_name):
@@ -216,13 +219,13 @@ class SubBatBot(Bot):
             await ctx.send(f"Unexpected error, please let Sedsarq know!")
         else:
             result = await sheet.add_data(twitch_name, chess_name, rating, *peak_data, sub=sub)
-            if result == 'new':
-                await ctx.send(f"Thanks @{twitch_name}! {chess_name} ({rating}) has applied.")
-            elif result == 'updated':
-                await ctx.send(f"@{twitch_name}: Details updated! ({chess_name}, {rating})")
-            elif result == 'moved':
-                role = 'sub' if sub else 'non-sub'
-                await ctx.send(f"@{twitch_name}: You're now on the sheet as a {role}.")
+            #if result == 'new':
+            #    await ctx.send(f"Thanks @{twitch_name}! {chess_name} ({rating}) has applied.")
+            #elif result == 'updated':
+            #    await ctx.send(f"@{twitch_name}: Details updated! ({chess_name}, {rating})")
+            #elif result == 'moved':
+            #    role = 'sub' if sub else 'non-sub'
+            #    await ctx.send(f"@{twitch_name}: You're now on the sheet as a {role}.")
 
 
 if __name__ == "__main__":
