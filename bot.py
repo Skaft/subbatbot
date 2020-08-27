@@ -6,7 +6,7 @@ from twitchio.ext.commands import Bot, command, errors, check
 import aiohttp
 
 from aio_lookup import ChessComAPI, LichessAPI, APIError, UserNotFound
-from sheet import BattleSheet, all_sheet_names
+from sheet import BattleSheet
 from db import SettingsDatabase
 from globals import *
 
@@ -16,7 +16,6 @@ from globals import *
 # TODO: Sheet tests
 
 # Kinda not so urgent:
-# TODO: Leaving and rejoining causes a worksheet caching error.
 # TODO: Switching from chess.com to lichess leaves peak columns in place
 # TODO: Error handling on DB
 # TODO: Setting: Disable ?link, pass through whisper

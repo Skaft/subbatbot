@@ -172,6 +172,9 @@ class BattleSheet:
     async def remove(self):
         agc = await agcm.authorize()
         await agc.del_spreadsheet(self.sheet.id)
+        title = self.channel_name
+        if title in agc._ss_cache_title:
+            del agc._ss_cache_title[title]  # gspread_asyncio forgot to remove sheet from this cache (v1.1.0)
 
     async def refresh_users(self):
         d = {}
