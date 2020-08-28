@@ -1,6 +1,7 @@
 import os
 from random import choice
 from string import Template
+import asyncio
 
 from twitchio.ext.commands import Bot, command, errors, check
 import aiohttp
@@ -172,6 +173,25 @@ class SubBatBot(Bot):
         """help - Provide some assistance"""
         await ctx.send(self.help_msg_template.substitute(prefix=ctx.prefix))
 
+    @command(name='draw')
+    async def draw(self, ctx):
+        sheet = self.sheets[ctx.channel.name]
+        tickets = []
+        for twitch_name, (ws, row) in sheet.users_on_sheet.items():
+            if ws.title.lower() == 'subs':
+                tickets.extend([twitch_name] * 3)
+            else:
+                tickets.extend([twitch_name] * 1)
+        if not tickets:
+            await ctx.send("No names to draw a winner from!")
+        else:
+            winner = choice(tickets)
+            is_sub = sheet.users_on_sheet[winner][0].title.lower() == 'subs'
+            ticket_str = "3 tickets" if is_sub else "1 ticket"
+            await ctx.send(f"/me Out of {len(sheet.users_on_sheet)} players, and a total number of {len(tickets)} tickets, the winner is... *drumroll* ...")
+            await asyncio.sleep(10)
+            await ctx.send(f"/me ... {winner}, who entered with {ticket_str}! Congratulations!")
+
     @command(name='set')
     async def set(self, ctx, setting: str, value: str):
         """set setting value - Change settings. Use without arguments for current settings"""
@@ -192,9 +212,7 @@ class SubBatBot(Bot):
 
     #@command(name='test')
     #async def test(self, ctx):
-    #    for i in range(1, 16):
-    #        await ctx.send(f"{i}. Sorry for the spam, I'm testing rate limits")
-        #print(os.environ['DATABASE_URL'])
+    #    pass
 
     @command(name='apply', no_global_checks=True)
     async def apply(self, ctx, chess_name):
