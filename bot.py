@@ -12,27 +12,29 @@ from db import SettingsDatabase
 from globals import *
 
 
-# Kinda urgent:
+# Frontend things to fix:
 # TODO: On format setting change, modify sheet accordingly
-# TODO: Sheet tests
 # TODO: Switching from chess.com to lichess leaves peak columns in place
-
-# Kinda not so urgent:
-# TODO: Error handling on DB
-# TODO: Setting: Disable ?link, pass through whisper
-#       - Bot can whisper to users if apply succeeded
-# TODO: Figure out if the _nowait keyword should be used (is it operating in sync now?)
-# TODO: users_on_sheet *should* go by user id, not display_name
-#       - But: requires DB in order to restore on restart
-# TODO: ?set procedure is icky
-#       -@setting deco: verify value (pre) and update DB (post)
-# TODO: logging
-# TODO: Custom prefixes?
-# TODO: more game types
+#       - Separate Header object?
+# TODO: Whisper support (when approved for "known" status by twitch)
+#       - Setting to make ?link pass through whisper
+#       - Notify applying users on success/fail
 # TODO: Auto-follow (for followers-only chat)
 #       - maybe not - would need some scope thing in auth. manual works for now
-# TODO: Custom Command (at least) for apply, to use @error and separate away the error handling.
-# TODO: Dynamic header (so that set_site can alter one column name, set_game another)
+
+# Backend/feelgood stuff:
+# TODO: Tests
+# TODO: Logging
+# TODO: Tidy up error handling
+#       - Custom Command (at least) for apply, to use @error and separate away the error handling.
+#       - DB has nothing atm
+# TODO: Figure out if the _nowait keyword should be used (is it operating in sync now?)
+# TODO: users_on_sheet *should* go by user id, not display_name
+#       - Needs to either store IDs on the sheet, or in DB, in order to restore on restart
+# TODO: ?set procedure is icky
+#       -Maybe a @setting deco: verify value (pre) and update DB (post)
+# TODO: More game types: 960, bughouse, etc. 4pc seems unavailable =/
+# TODO: Custom prefixes?
 
 
 greetings = [
