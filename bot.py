@@ -101,7 +101,7 @@ class SubBatBot(Bot):
         self.db.delete_channel(channel_name)
 
     async def event_message(self, msg):
-        if msg.author.name.lower() == os.environ['BOT_NICK'].lower():
+        if msg.author.name.lower() in USER_BLACKLIST:
             return
         try:
             await self.handle_commands(msg)
