@@ -61,10 +61,31 @@ class SettingsDatabase:
         self.cur.execute("SELECT channel FROM settings;")
         return [c[0] for c in self.cur]
 
+    def _new_token(self, token, type='access'):
+        if type not in ('access', 'refresh'):
+            raise ValueError('Token can only be access or refresh')
+        sql = f"INSERT INTO params (var, val) VALUES (%s, %s);"
+        self._commit(sql, (f"{type}_token", token))
+
+    def update_token(self, token, type='access'):
+        if type not in ('access', 'refresh'):
+            raise ValueError('Token can only be access or refresh')
+        sql = f"UPDATE params SET val = %s WHERE var=%s;"
+        varname = f"{type}_token"
+        self._commit(sql, (token, varname))
+
+    def get_token(self, type='access'):
+        if type not in ('access', 'refresh'):
+            raise ValueError('Token can only be access or refresh')
+        sql = "SELECT val FROM params WHERE var=%s;"
+        varname = f"{type}_token"
+        self.cur.execute(sql, (varname,))
+        return self.cur.fetchall()[0][0]
+
     def _commit(self, sql, values):
         self.cur.execute(sql, values)
         self.conn.commit()
 
 if __name__ == '__main__':
     db = SettingsDatabase()
-    print(db.get_all_records())
+    print(db.get_token('refresh'))
