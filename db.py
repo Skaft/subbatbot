@@ -61,26 +61,25 @@ class SettingsDatabase:
         self.cur.execute("SELECT channel FROM settings;")
         return [c[0] for c in self.cur]
 
-    def _new_token(self, token, type='access'):
-        if type not in ('access', 'refresh'):
-            raise ValueError('Token can only be access or refresh')
-        sql = f"INSERT INTO params (var, val) VALUES (%s, %s);"
-        self._commit(sql, (f"{type}_token", token))
+    def _new_token(self, token, name='twitch_api_token'):
+        cols, vals = zip(*token.items())
+        vals = (name, *vals)
+        sql = f"INSERT INTO params (name, {', '.join(cols)}) VALUES (%s, %s, %s, %s, %s, %s);"
+        self._commit(sql, vals)
 
-    def update_token(self, token, type='access'):
-        if type not in ('access', 'refresh'):
-            raise ValueError('Token can only be access or refresh')
-        sql = f"UPDATE params SET val = %s WHERE var=%s;"
-        varname = f"{type}_token"
-        self._commit(sql, (token, varname))
+    def update_token(self, token, name='twitch_api_token'):
+        cols, vals = zip(*token.items())
+        columns = ', '.join(cols)
+        placeholders = ', '.join(['%s'] * len(cols))
+        sql = f"UPDATE params SET ({columns}) = ({placeholders}) WHERE name=%s;"
+        self._commit(sql, (*vals, name))
 
-    def get_token(self, type='access'):
-        if type not in ('access', 'refresh'):
-            raise ValueError('Token can only be access or refresh')
-        sql = "SELECT val FROM params WHERE var=%s;"
-        varname = f"{type}_token"
-        self.cur.execute(sql, (varname,))
-        return self.cur.fetchall()[0][0]
+    def get_token(self, name='twitch_api_token'):
+        keys = ['access_token', 'refresh_token', 'expires_in', 'scope', 'token_type']
+        columns = ', '.join(keys)
+        sql = f"SELECT {columns} FROM params WHERE name=%s;"
+        self.cur.execute(sql, (name,))
+        return dict(zip(keys, self.cur.fetchall()[0]))
 
     def _commit(self, sql, values):
         self.cur.execute(sql, values)
@@ -88,4 +87,7 @@ class SettingsDatabase:
 
 if __name__ == '__main__':
     db = SettingsDatabase()
-    print(db.get_token('refresh'))
+    token = db.get_token()
+    token['refresh_token'] = 'poop'
+    db.update_token(token)
+    print(db.get_token())
