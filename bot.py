@@ -116,8 +116,8 @@ class SubBatBot(Bot):
         name = user.display_name
         pre = ctx.prefix
         if isinstance(error, errors.CheckFailure):
-            if str(error).endswith('mod_or_sed'):
-                return
+            #if str(error).endswith('mod_or_sed'):
+            return
                 #msg = f"Only the {pre}apply command is available to non-moderators, sorry!"
                 #return await ctx.send(f"@{name}: {msg}")
         elif isinstance(error, errors.CommandNotFound):
