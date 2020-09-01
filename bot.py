@@ -9,6 +9,7 @@ import aiohttp
 from aio_lookup import ChessComAPI, LichessAPI, APIError, UserNotFound
 from sheet import BattleSheet
 from db import SettingsDatabase
+from twitch_api import add_follow
 from globals import *
 
 
@@ -82,7 +83,7 @@ class SubBatBot(Bot):
             'chess.com': ChessComAPI(session)
         }
         if DEV_MODE:
-            channel_names = [self.nick, 'sedsarq', 'subbatbot']
+            channel_names = [self.nick]
         else:
             channel_names = self.db.get_all_channels()
         for channel_name in channel_names:
@@ -142,13 +143,11 @@ class SubBatBot(Bot):
     async def join(self, ctx, channel_name=None):
         """join - Make the bot join the user's channel"""
         # Giving myself the option to make it join others' channels
-        if ctx.author.id != SED_ID:
+        user_id = ctx.author.id
+        if user_id != SED_ID:
             channel_name = ctx.author.name.lower()
+        add_follow(user_id=user_id, db=self.db)
         await self.join_channel(channel_name, greet=True)
-        #if channel_name in self.sheets:
-        #    await ctx.send(f"@{ctx.author.display_name}: I should be there now!")
-        #else:
-        #    await ctx.send(f"@{ctx.author.display_name}: Hm, wait a bit and/or try again - something seems wrong")
 
     @command(name='leave')
     async def leave(self, ctx, channel_name=None):
