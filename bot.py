@@ -20,8 +20,6 @@ from globals import *
 # TODO: Whisper support (when approved for "known" status by twitch)
 #       - Setting to make ?link pass through whisper
 #       - Notify applying users on success/fail
-# TODO: Auto-follow (for followers-only chat)
-#       - maybe not - would need some scope thing in auth. manual works for now
 
 # Backend/feelgood stuff:
 # TODO: Tests
