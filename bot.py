@@ -2,6 +2,7 @@ import os
 from random import choice
 from string import Template
 import asyncio
+import logging
 
 from twitchio.ext.commands import Bot, command, errors, check
 import aiohttp
@@ -36,6 +37,13 @@ from globals import *
 # TODO: Custom prefixes?
 
 
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
+logging.getLogger('websockets').setLevel(logging.ERROR)
+logging.getLogger('twitchio').setLevel(logging.ERROR)
+logging.getLogger('urllib3').setLevel(logging.ERROR)
+
 greetings = [
     "/me Is it a bird, is it a plane, etc.",
     "/me is here!",
@@ -47,7 +55,6 @@ greetings = [
     "/me Hey, I'm on your side. But also maybe on theirs.",
     "/me *sneaks in*",
 ]
-
 
 def mod_or_sed(ctx):
     user = ctx.author
@@ -61,7 +68,10 @@ def is_bot_channel(ctx):
 class SubBatBot(Bot):
 
     def __init__(self, *args, **kwargs):
+
         super().__init__(*args, **kwargs)
+        log.info(f"Initialized {self.nick}, dev mode = {DEV_MODE}")
+
         self.add_check(mod_or_sed)
 
         self.sheets = {}
@@ -81,9 +91,10 @@ class SubBatBot(Bot):
             'chess.com': ChessComAPI(session)
         }
         if DEV_MODE:
-            channel_names = [self.nick]
+            channel_names = [self.nick, 'sedsarq', 'subbatbot']
         else:
             channel_names = self.db.get_all_channels()
+        log.debug(f"Found {len(channel_names)} channels to join")
         for channel_name in channel_names:
             await self.join_channel(channel_name, greet=DEV_MODE)
         print(f"{os.environ['BOT_NICK']} is online!")
@@ -107,12 +118,14 @@ class SubBatBot(Bot):
         try:
             await self.handle_commands(msg)
         except errors.MissingRequiredArgument as e:  # TODO: <-- why is this here?
+            log.error(f"({msg.channel.name}) Missing req argument box! {msg.author.display_name} posted {msg.content}")
             print(e)
 
     async def event_command_error(self, ctx, error):
         user = ctx.author
         name = user.display_name
         pre = ctx.prefix
+        log.error(f"({ctx.channel.name}) {name} caused {error} by typing '{ctx.message}'")
         if isinstance(error, errors.CheckFailure):
             #if str(error).endswith('mod_or_sed'):
             return
@@ -144,36 +157,41 @@ class SubBatBot(Bot):
         user_id = ctx.author.id
         if user_id != SED_ID:
             channel_name = ctx.author.name.lower()
+        log.info(f"({ctx.channel.name}) Joining {channel_name}")
         add_follow(user_id=user_id, db=self.db)
         await self.join_channel(channel_name, greet=True)
 
     @command(name='leave')
     async def leave(self, ctx, channel_name=None):
         """leave - Make the bot leave the channel"""
-        if ctx.author.id == SED_ID:
-            await self.leave_channel(channel_name)
-        else:
-            await self.leave_channel(ctx.channel.name)
+        if ctx.author.id != SED_ID:
+            channel_name = ctx.channel.name
+        await self.leave_channel(channel_name)
+        log.info(f"({ctx.channel.name}) Leaving {channel_name}")
 
     @command(name='clear')
     async def clear(self, ctx):
         """clear - Reset the spreadsheet"""
+        log.debug(f"({ctx.channel.name}) {ctx.author.display_name} uses ?clear")
         sheet = self.sheets[ctx.channel.name]
         await sheet.clear()
 
     @command(name='link')
     async def link(self, ctx):
         """link - Post link to the spreadsheet"""
+        log.debug(f"({ctx.channel.name}) {ctx.author.display_name} uses ?link")
         sheet = self.sheets[ctx.channel.name]
         await ctx.send(f"Find the sheet at {sheet.url}")
 
     @command(name='help')
     async def help(self, ctx):
         """help - Provide some assistance"""
+        log.debug(f"({ctx.channel.name}) {ctx.author.display_name} uses ?help")
         await ctx.send(self.help_msg_template.substitute(prefix=ctx.prefix))
 
     @command(name='draw')
     async def draw(self, ctx):
+        log.debug(f"({ctx.channel.name}) {ctx.author.display_name} uses ?draw")
         sheet = self.sheets[ctx.channel.name]
         tickets = []
         for twitch_name, (ws, row) in sheet.users_on_sheet.items():
@@ -194,6 +212,7 @@ class SubBatBot(Bot):
     @command(name='set')
     async def set(self, ctx, setting: str, value: str):
         """set setting value - Change settings. Use without arguments for current settings"""
+        log.debug(f"({ctx.channel.name}) {ctx.author.display_name} sets {setting} to {value}")
         channel_name = ctx.channel.name
         sheet = self.sheets[channel_name]
         try:
@@ -231,11 +250,12 @@ class SubBatBot(Bot):
         except APIError as e:
             await ctx.send(f"@{twitch_name}: {e}")
         except Exception as e:
-            # TODO: actual logging here
-            print(f"Unexpected error: {e}")
+            log.exception(f"({ctx.channel.name}) Unexpected lookup fail: {site}, {game_type}, {chess_name} => {e}")
             await ctx.send(f"Unexpected error, please let Sedsarq know!")
         else:
             result = await sheet.add_data(twitch_name, chess_name, rating, *peak_data, sub=sub)
+
+            # whisper these results
             #if result == 'new':
             #    await ctx.send(f"Thanks @{twitch_name}! {chess_name} ({rating}) has applied.")
             #elif result == 'updated':

@@ -84,10 +84,3 @@ class SettingsDatabase:
     def _commit(self, sql, values):
         self.cur.execute(sql, values)
         self.conn.commit()
-
-if __name__ == '__main__':
-    db = SettingsDatabase()
-    token = db.get_token()
-    token['refresh_token'] = 'poop'
-    db.update_token(token)
-    print(db.get_token())

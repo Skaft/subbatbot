@@ -9,6 +9,7 @@ oAuth process:
 import os
 import requests
 from globals import *
+import logging
 
 
 TWITCH_AUTH_URL = "https://id.twitch.tv/oauth2/authorize"
@@ -16,6 +17,7 @@ TWITCH_TOKEN_URL = "https://id.twitch.tv/oauth2/token"
 TWITCH_REFRESH_URL = "https://id.twitch.tv/oauth2/token"
 REDIRECT_URI = "https://localhost"
 TOKEN = None
+log = logging.getLogger(__name__)
 
 
 def auth_link(scope="user:edit:follows"):
@@ -54,6 +56,7 @@ def refresh_token(db=None):
         'refresh_token': TOKEN['refresh_token'],
     }
     new_token = requests.post(TWITCH_REFRESH_URL, params=params).json()
+    log.debug(f"Refreshed token from {TOKEN['access_token'][:5]} to {new_token['refresh_token'][:5]}")
     TOKEN.update(new_token)
     if db:
         db.update_token(TOKEN)
@@ -64,6 +67,7 @@ def get_bearer_token(db):
     global TOKEN
     if TOKEN is None:
         TOKEN = db.get_token()
+    log.debug(f"Fetched token: {TOKEN['access_token'][:5]}")
     return TOKEN
 
 
@@ -76,11 +80,13 @@ def add_follow(user_id=None, username=None, db=None):
         from_id = str(SBBD_ID)
     else:
         from_id = str(SBB_ID)
+    log.debug(f"Requesting follow to name={username}, id={user_id}")
     url = 'https://api.twitch.tv/helix/users/follows'
     make_private_req(url, method='post', db=db, login=username, from_id=from_id, to_id=str(user_id))
 
 
 def get_user_id(username, db=None):
+    log.debug(f"Looking up ID for user {username}")
     url = f"https://api.twitch.tv/helix/users"
     d = make_private_req(url, db=db, json=True, login=username)
     return int(d['data'][0]['id'])
@@ -96,9 +102,9 @@ def make_private_req(url, method='get', attempts=0, db=None, json=False, **param
     resp = function(url, headers=headers, params=params)
     if resp.status_code == 401:
         if attempts == 1:
-            print(f"Unauthorized even after refresh! {url}, {params}")
+            log.error(f"Unauthorized even after refresh! {url}, {params}, token {token['access_token'][:5]}")
             return
-        print('Unauthorized, refreshing token')
+        log.info(f"Token {token['access_token'][:5]} looks invalid")
         refresh_token(db)
         return make_private_req(url, method=method, attempts=1, db=db, **params)
     resp.raise_for_status()
