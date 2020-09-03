@@ -183,9 +183,12 @@ class SubBatBot(Bot):
     @command(name='link')
     async def link(self, ctx):
         """link - Post link to the spreadsheet"""
-        log.debug(f"({ctx.channel.name}) {ctx.author.display_name} uses ?link")
-        sheet = self.sheets[ctx.channel.name]
-        await ctx.send(f"Find the sheet at {sheet.url}")
+        url = self.sheets[ctx.channel.name].url
+        user = ctx.author.name
+        msg = f"Find the {ctx.channel.name} sheet at {url}."
+        await self._whisper(user, msg, ctx=ctx)
+
+        log.debug(f"({ctx.channel.name}) {user} got the sheet link by whisper")
 
     @command(name='help')
     async def help(self, ctx):
@@ -243,8 +246,14 @@ class SubBatBot(Bot):
             await ctx.send(f"@{ctx.author.display_name}: {e}")
 
 #   @monitor to track usage stats and watch out for rate limiting
-    async def _whisper(self, user, msg):
-        await self._ws._websocket.send(f"PRIVMSG #jtv :/w {user} {msg}")
+    async def _whisper(self, user, msg, ctx=None):
+        if self.nick == 'sbbdev':
+            if ctx is None:
+                log.error("Dev bot was asked to whisper, and don't know where to send the message instead")
+                return
+            await ctx.send(f"@{user}: {msg}")
+        else:
+            await self._ws._websocket.send(f"PRIVMSG #jtv :/w {user} {msg}")
 
     @check(is_me)
     @command(name='test', no_global_checks=True)
