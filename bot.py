@@ -62,7 +62,6 @@ def mod_or_sed(ctx):
 
 
 def is_me(ctx):
-    print('here!', ctx.author.id, ctx.author.display_name)
     return ctx.author.id == SED_ID
 
 
@@ -194,22 +193,32 @@ class SubBatBot(Bot):
         log.debug(f"({ctx.channel.name}) {ctx.author.display_name} uses ?help")
         await ctx.send(self.help_msg_template.substitute(prefix=ctx.prefix))
 
-    @command(name='draw')
-    async def draw(self, ctx):
-        log.debug(f"({ctx.channel.name}) {ctx.author.display_name} uses ?draw")
+    # disabled command. Should it be a thing? Current version untested.
+    #@command(name='draw')
+    async def draw(self, ctx, sub_tickets=3, pleb_tickets=1):
+        log.debug(f"({ctx.channel.name}) {ctx.author.display_name} uses ?draw {sub_tickets} {pleb_tickets}")
+        try:
+            sub_tickets = int(sub_tickets)
+            pleb_tickets = int(pleb_tickets)
+            if sub_tickets < 0 or pleb_tickets < 0:
+                raise ValueError
+        except ValueError:
+            ctx.send('Use non-negative integer numbers for ticket counts, like ?draw 3 1.')
+            return
         sheet = self.sheets[ctx.channel.name]
         tickets = []
         for twitch_name, (ws, row) in sheet.users_on_sheet.items():
             if ws.title.lower() == 'subs':
-                tickets.extend([twitch_name] * 3)
+                tickets.extend([twitch_name] * sub_tickets)
             else:
-                tickets.extend([twitch_name] * 1)
+                tickets.extend([twitch_name] * pleb_tickets)
         if not tickets:
             await ctx.send("No names to draw a winner from!")
         else:
             winner = choice(tickets)
             is_sub = sheet.users_on_sheet[winner][0].title.lower() == 'subs'
-            ticket_str = "3 tickets" if is_sub else "1 ticket"
+            n_tickets = sub_tickets if is_sub else pleb_tickets
+            ticket_str = f"{n_tickets} ticket" if n_tickets == 1 else f"{n_tickets} tickets"
             await ctx.send(f"/me Out of {len(sheet.users_on_sheet)} players, and a total number of {len(tickets)} tickets, the winner is... *drumroll* ...")
             await asyncio.sleep(10)
             await ctx.send(f"/me ... {winner}, who entered with {ticket_str}! Congratulations!")
