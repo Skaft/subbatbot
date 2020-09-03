@@ -24,7 +24,7 @@ from globals import *
 
 # Backend/feelgood stuff:
 # TODO: Tests
-# TODO: Logging
+# TODO: More/Better Logging - Not very informative atm and some modules still missing
 # TODO: Tidy up error handling
 #       - Custom Command (at least) for apply, to use @error and separate away the error handling.
 #       - DB has nothing atm
@@ -61,6 +61,11 @@ def mod_or_sed(ctx):
     return user.is_mod or user.id == SED_ID
 
 
+def is_me(ctx):
+    print('here!', ctx.author.id, ctx.author.display_name)
+    return ctx.author.id == SED_ID
+
+
 def is_bot_channel(ctx):
     return ctx.channel.name.lower() == os.environ['BOT_NICK'].lower()
 
@@ -91,7 +96,7 @@ class SubBatBot(Bot):
             'chess.com': ChessComAPI(session)
         }
         if DEV_MODE:
-            channel_names = [self.nick, 'sedsarq', 'subbatbot']
+            channel_names = [self.nick]
         else:
             channel_names = self.db.get_all_channels()
         log.debug(f"Found {len(channel_names)} channels to join")
@@ -125,7 +130,7 @@ class SubBatBot(Bot):
         user = ctx.author
         name = user.display_name
         pre = ctx.prefix
-        log.error(f"({ctx.channel.name}) {name} caused {error} by typing '{ctx.message}'")
+        log.error(f"({ctx.channel.name}) {name} caused '{error}' by typing '{ctx.message.content}'")
         if isinstance(error, errors.CheckFailure):
             #if str(error).endswith('mod_or_sed'):
             return
@@ -228,9 +233,14 @@ class SubBatBot(Bot):
         except ValueError as e:
             await ctx.send(f"@{ctx.author.display_name}: {e}")
 
-    #@command(name='test')
-    #async def test(self, ctx):
-    #    pass
+    async def _whisper(self, user, msg):
+        await bot._ws._websocket.send(f"PRIVMSG #jtv :/w {user} {msg}")
+
+    @check(is_me)
+    @command(name='test', no_global_checks=True)
+    async def test(self, ctx, to):
+        print("yes, that's me")
+        #await bot._ws._websocket.send(message_temp)
 
     @command(name='apply', no_global_checks=True)
     async def apply(self, ctx, chess_name):
