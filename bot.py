@@ -185,7 +185,7 @@ class SubBatBot(Bot):
         """link - Post link to the spreadsheet"""
         url = self.sheets[ctx.channel.name].url
         user = ctx.author.name
-        msg = f"Find the {ctx.channel.name} sheet at {url}."
+        msg = f"Find the {ctx.channel.name} sheet at {url}"
         await self._whisper(user, msg, ctx)
 
         log.debug(f"({ctx.channel.name}) {user} got the sheet link by whisper")
