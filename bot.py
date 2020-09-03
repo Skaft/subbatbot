@@ -150,7 +150,7 @@ class SubBatBot(Bot):
                 msg = BattleSheet.settings_help_string
             else:
                 msg = str(error)
-            return await ctx.send(f"@{name}: {msg}")
+            return await ctx.send(msg)
         return await super().event_command_error(ctx, error)
 
     @check(is_bot_channel)
