@@ -233,14 +233,14 @@ class SubBatBot(Bot):
         except ValueError as e:
             await ctx.send(f"@{ctx.author.display_name}: {e}")
 
+#   @monitor to track usage stats and watch out for rate limiting
     async def _whisper(self, user, msg):
-        await bot._ws._websocket.send(f"PRIVMSG #jtv :/w {user} {msg}")
+        await self._ws._websocket.send(f"PRIVMSG #jtv :/w {user} {msg}")
 
     @check(is_me)
     @command(name='test', no_global_checks=True)
     async def test(self, ctx, to):
-        print("yes, that's me")
-        #await bot._ws._websocket.send(message_temp)
+        await self._whisper(to, 'This is a test whisper!')
 
     @command(name='apply', no_global_checks=True)
     async def apply(self, ctx, chess_name):
