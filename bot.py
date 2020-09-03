@@ -186,7 +186,7 @@ class SubBatBot(Bot):
         url = self.sheets[ctx.channel.name].url
         user = ctx.author.name
         msg = f"Find the {ctx.channel.name} sheet at {url}."
-        await self._whisper(user, msg, ctx=ctx)
+        await self._whisper(user, msg, ctx)
 
         log.debug(f"({ctx.channel.name}) {user} got the sheet link by whisper")
 
@@ -246,7 +246,7 @@ class SubBatBot(Bot):
             await ctx.send(f"@{ctx.author.display_name}: {e}")
 
 #   @monitor to track usage stats and watch out for rate limiting
-    async def _whisper(self, user, msg, ctx=None):
+    async def _whisper(self, user, msg, ctx):
         if self.nick == 'sbbdev':
             if ctx is None:
                 log.error("Dev bot was asked to whisper, and don't know where to send the message instead")
@@ -258,7 +258,7 @@ class SubBatBot(Bot):
     @check(is_me)
     @command(name='test', no_global_checks=True)
     async def test(self, ctx, to):
-        await self._whisper(to, 'This is a test whisper!')
+        await self._whisper(to, 'This is a test whisper!', ctx)
 
     @command(name='apply', no_global_checks=True)
     async def apply(self, ctx, chess_name):
@@ -276,21 +276,25 @@ class SubBatBot(Bot):
         except UserNotFound:
             await ctx.send(f"@{twitch_name}: Couldn't find player \"{chess_name}\" on {site}!")
         except APIError as e:
+            log.error(f"({ctx.channel.name}) APIError: The lookup for {site}, {game_type}, {chess_name} resulted in '{e}'")
             await ctx.send(f"@{twitch_name}: {e}")
         except Exception as e:
             log.exception(f"({ctx.channel.name}) Unexpected lookup fail: {site}, {game_type}, {chess_name} => {e}")
             await ctx.send(f"Unexpected error, please let Sedsarq know!")
         else:
             result = await sheet.add_data(twitch_name, chess_name, rating, *peak_data, sub=sub)
+            status = "subscriber" if sub else "non-subscriber"
+            if result == 'new':
+                msg = f"Thanks for applying! {chess_name} ({rating}) is now on the sheet, marked as {status}."
+            elif result == 'updated':
+                msg = f"Your details were updated to {chess_name} ({rating})."
+            elif result == 'moved':
+                msg = f"Your sub status has changed! {chess_name} ({rating}) is now marked as a {status}."
+            else:
+                log.error(f"bot.apply: The result {result} from add_data is not being handled! No message sent to {twitch_name}.")
+                return
+            self._whisper(user.name, msg, ctx)
 
-            # whisper these results
-            #if result == 'new':
-            #    await ctx.send(f"Thanks @{twitch_name}! {chess_name} ({rating}) has applied.")
-            #elif result == 'updated':
-            #    await ctx.send(f"@{twitch_name}: Details updated! ({chess_name}, {rating})")
-            #elif result == 'moved':
-            #    role = 'sub' if sub else 'non-sub'
-            #    await ctx.send(f"@{twitch_name}: You're now on the sheet as a {role}.")
 
 
 if __name__ == "__main__":
