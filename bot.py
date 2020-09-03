@@ -293,7 +293,7 @@ class SubBatBot(Bot):
             else:
                 log.error(f"bot.apply: The result {result} from add_data is not being handled! No message sent to {twitch_name}.")
                 return
-            self._whisper(user.name, msg, ctx)
+            await self._whisper(user.name, msg, ctx)
 
 
 
