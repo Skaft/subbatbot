@@ -14,13 +14,17 @@ from twitch_api import add_follow
 from globals import *
 
 
-# Frontend things to fix:
-# TODO: On format setting change, modify sheet accordingly
-# TODO: Switching from chess.com to lichess leaves peak columns in place
+# Frontend things:
+# TODO: Bug: Changing display name looks like a different user, giving multiple spots on sheet.
+#       - user id in users_on_sheet, and ID column on sheet
+# TODO: Bug: Switching from chess.com to lichess leaves peak columns in place
 #       - Separate Header object?
-# TODO: Whisper support (when approved for "known" status by twitch)
-#       - Setting to make ?link pass through whisper
-#       - Notify applying users on success/fail
+# TODO: Do something about users doing multiple identical apply's?
+#       - basically self spamming, but also hogging resources
+# TODO: On format setting change, modify sheet accordingly
+# TODO: More game types: 960, bughouse, etc. 4pc seems unavailable =/
+# TODO: Custom prefixes?
+# TODO: "Extra" column, for whatever data they want to pass?
 
 # Backend/feelgood stuff:
 # TODO: Tests
@@ -29,12 +33,8 @@ from globals import *
 #       - Custom Command (at least) for apply, to use @error and separate away the error handling.
 #       - DB has nothing atm
 # TODO: Figure out if the _nowait keyword should be used (is it operating in sync now?)
-# TODO: users_on_sheet *should* go by user id, not display_name
-#       - Needs to either store IDs on the sheet, or in DB, in order to restore on restart
 # TODO: ?set procedure is icky
 #       -Maybe a @setting deco: verify value (pre) and update DB (post)
-# TODO: More game types: 960, bughouse, etc. 4pc seems unavailable =/
-# TODO: Custom prefixes?
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -129,16 +129,16 @@ class SubBatBot(Bot):
         user = ctx.author
         name = user.display_name
         pre = ctx.prefix
-        log.error(f"({ctx.channel.name}) {name} caused '{error}' by typing '{ctx.message.content}'")
         if isinstance(error, errors.CheckFailure):
+            log.debug(f"({ctx.channel.name}) {name} caused '{error}' by typing '{ctx.message.content}'")
             #if str(error).endswith('mod_or_sed'):
             return
                 #msg = f"Only the {pre}apply command is available to non-moderators, sorry!"
                 #return await ctx.send(f"@{name}: {msg}")
-        elif isinstance(error, errors.CommandNotFound):
+        if isinstance(error, errors.CommandNotFound):
             # just ignore this error as it doesn't have to be someone trying to use the bot
             return
-        elif isinstance(error, errors.MissingRequiredArgument):
+        if isinstance(error, errors.MissingRequiredArgument):
             # using apply badly
             if error.param.name == 'chess_name':
                 msg = f'{pre}apply username <-- Type this, using your own chess username, to apply!'
@@ -149,8 +149,11 @@ class SubBatBot(Bot):
             elif error.param.name == 'value':
                 msg = BattleSheet.settings_help_string
             else:
+                log.error(f"({ctx.channel.name}) {name} caused '{error}' by typing '{ctx.message.content}'")
                 msg = str(error)
             return await ctx.send(msg)
+        else:
+            log.error(f"({ctx.channel.name}) {name} caused '{error}' by typing '{ctx.message.content}'")
         return await super().event_command_error(ctx, error)
 
     @check(is_bot_channel)
@@ -287,7 +290,7 @@ class SubBatBot(Bot):
             if result == 'new':
                 msg = f"Thanks for applying! {chess_name} ({rating}) is now on the sheet, marked as {status}."
             elif result == 'updated':
-                msg = f"Your details were updated to {chess_name} ({rating})."
+                msg = f"Your details were updated to: {chess_name} ({rating})."
             elif result == 'moved':
                 msg = f"Your sub status has changed! {chess_name} ({rating}) is now marked as a {status}."
             else:
