@@ -116,7 +116,8 @@ def make_private_req(url, method='get', attempts=0, db=None, json=False, **param
 @lru_cache()
 def get_moderated_channels(user):
     url = f"https://modlookup.3v.fi/api/user-v3/{user}"
-    r = requests.get(url, timeout=4)
+    botname = 'sbbdev' if DEV_MODE else 'subbatbot'
+    r = requests.get(url, timeout=4, headers={"user-agent": f"https://www.twitch.tv/{botname}"})
     if r.status_code != 200:
         return log.error(f"Mod lookup failed with status {r.status_code} for user {user}")
     dct = r.json()
