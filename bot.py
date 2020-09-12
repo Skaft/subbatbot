@@ -10,7 +10,7 @@ import aiohttp
 from aio_lookup import ChessComAPI, LichessAPI, APIError, UserNotFound
 from sheet import BattleSheet
 from db import SettingsDatabase
-from twitch_api import add_follow
+from twitch_api import add_follow, get_moderated_channels
 from globals import *
 
 
@@ -161,12 +161,16 @@ class SubBatBot(Bot):
     @command(name='join', no_global_checks=True)
     async def join(self, ctx, channel_name=None):
         """join - Make the bot join the user's channel"""
-        # Giving myself the option to make it join others' channels
-        user_id = ctx.author.id
-        if user_id != SED_ID:
-            channel_name = ctx.author.name.lower()
+        user = ctx.author.name
+        if channel_name is None:
+            channel_name = user
+        elif user != channel_name and channel_name not in get_moderated_channels(user) and ctx.author.id != SED_ID:
+            await ctx.send(f"@{ctx.author.display_name} That doesn't look like a channel you mod or own. "
+                           "If I'm wrong, try again later or ask Sedsarq to send the bot there.")
+            return
+        await ctx.send(f"Heading to /{channel_name}!")
         log.info(f"({ctx.channel.name}) Joining {channel_name}")
-        add_follow(user_id=user_id, db=self.db)
+        add_follow(username=channel_name, db=self.db)
         await self.join_channel(channel_name, greet=True)
 
     @command(name='leave')
@@ -261,11 +265,16 @@ class SubBatBot(Bot):
 
     @check(is_me)
     @command(name='test', no_global_checks=True)
-    async def test(self, ctx):
-        url = "https://api.twitch.tv/helix/moderation/moderators"
-        from twitch_api import make_private_req
-        resp = make_private_req(url, method='get', db=self.db, json=True, broadcaster_id=str(SED_ID))
-        print(resp)
+    async def test(self, ctx, channel=None):
+        user = ctx.author.name
+        if channel is None:
+            print('Joining!')
+        elif user == channel or channel in get_moderated_channels(user):
+            print('Success!')
+        else:
+            await ctx.send(f"@{ctx.author.display_name} You don't appear to be a mod or owner of that channel. "
+                           "If you are, try again later or ask Sedsarq to send the bot there.")
+
 
     @command(name='apply', no_global_checks=True)
     async def apply(self, ctx, chess_name):
