@@ -10,6 +10,7 @@ import os
 import requests
 from globals import *
 import logging
+from functools import lru_cache
 
 
 TWITCH_AUTH_URL = "https://id.twitch.tv/oauth2/authorize"
@@ -112,6 +113,17 @@ def make_private_req(url, method='get', attempts=0, db=None, json=False, **param
         return resp.json()
 
 
+@lru_cache()
+def get_moderated_channels(user):
+    print('looking up', user)
+    url = f"https://modlookup.3v.fi/api/user-v3/{user}"
+    r = requests.get(url, timeout=4)
+    if r.status_code == 200:
+        dct = r.json()
+        return {ch['name'] for ch in dct['channels']}
+    log.error(f"Mod lookup failed with status {r.status_code} for user {user}")
+
+
+
 if __name__ == '__main__':
-    from db import SettingsDatabase
-    add_follow(username='sedsarq', db=SettingsDatabase())
+    pass

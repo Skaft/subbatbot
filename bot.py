@@ -25,6 +25,7 @@ from globals import *
 # TODO: More game types: 960, bughouse, etc. 4pc seems unavailable =/
 # TODO: Custom prefixes?
 # TODO: "Extra" column, for whatever data they want to pass?
+# TODO: "?join channel" available for mods of channel (nathan asked)
 
 # Backend/feelgood stuff:
 # TODO: Tests
@@ -149,7 +150,7 @@ class SubBatBot(Bot):
             elif error.param.name == 'value':
                 msg = BattleSheet.settings_help_string
             else:
-                log.error(f"({ctx.channel.name}) {name} caused '{error}' by typing '{ctx.message.content}'")
+                log.debug(f"({ctx.channel.name}) {name} caused '{error}' by typing '{ctx.message.content}'")
                 msg = str(error)
             return await ctx.send(msg)
         else:
@@ -260,8 +261,11 @@ class SubBatBot(Bot):
 
     @check(is_me)
     @command(name='test', no_global_checks=True)
-    async def test(self, ctx, to):
-        await self._whisper(to, 'This is a test whisper!', ctx)
+    async def test(self, ctx):
+        url = "https://api.twitch.tv/helix/moderation/moderators"
+        from twitch_api import make_private_req
+        resp = make_private_req(url, method='get', db=self.db, json=True, broadcaster_id=str(SED_ID))
+        print(resp)
 
     @command(name='apply', no_global_checks=True)
     async def apply(self, ctx, chess_name):
