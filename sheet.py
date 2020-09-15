@@ -66,6 +66,9 @@ class BattleSheet:
         self.sheet = None
         self.last_col = None
         self._header_data = None
+
+        # dict of {username.lower(): (worksheet, row_nr)}.
+        # Lowercase names to avoid multiple entries by changing display_name
         self.users_on_sheet = {}
         self.url = None
 
@@ -168,7 +171,7 @@ class BattleSheet:
             ws = await sheet.get_worksheet(0)
         else:
             ws = await sheet.get_worksheet(1)
-        last_entry = self.users_on_sheet.get(twitch_name)
+        last_entry = self.users_on_sheet.get(twitch_name.lower())
 
         # replace user data
         if last_entry:
@@ -188,11 +191,11 @@ class BattleSheet:
             res = "new"
         return res
 
-    async def _append(self, ws, user_id, row_values):
-        log.debug(f"{self.channel_name}: Adding {user_id} to {ws.title}")
+    async def _append(self, ws, user_name, row_values):
+        log.debug(f"{self.channel_name}: Adding {user_name} to {ws.title}")
         ret = await ws.append_row(row_values)
         row_nr = int(search(r'\d+$', ret['updates']['updatedRange']).group())
-        self.users_on_sheet[user_id] = ws, row_nr
+        self.users_on_sheet[user_name.lower()] = ws, row_nr
 
     async def _replace(self, ws, row_nr, values):
         log.debug(f"{self.channel_name}: Replacing {ws.title} row {row_nr} with {values}")
@@ -214,7 +217,7 @@ class BattleSheet:
         worksheets = await self.sheet.worksheets()
         for ws in worksheets:
             twitch_name_col = await ws.col_values(1)
-            twitch_name_to_row_nr = {name: (ws, n) for n, name in enumerate(twitch_name_col[1:], 2)}
+            twitch_name_to_row_nr = {name.lower(): (ws, n) for n, name in enumerate(twitch_name_col[1:], 2)}
             d.update(twitch_name_to_row_nr)
         log.debug(f"{self.channel_name}: Refreshed user dict from {len(self.users_on_sheet)} to {len(d)} users")
         self.users_on_sheet = d

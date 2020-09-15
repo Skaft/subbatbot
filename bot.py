@@ -269,7 +269,7 @@ class SubBatBot(Bot):
     @check(is_me)
     @command(name='test', no_global_checks=True)
     async def test(self, ctx, channel=None):
-        user = ctx.author.name
+        pass
 
     @command(name='apply', no_global_checks=True)
     async def apply(self, ctx, chess_name):
