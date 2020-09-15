@@ -16,7 +16,8 @@ from globals import *
 
 # Frontend things:
 # TODO: Bug: Changing display name looks like a different user, giving multiple spots on sheet.
-#       - user id in users_on_sheet, and ID column on sheet
+#       - user id in users_on_sheet, and ID column on sheet?
+#       - Or just store lowercase name in users_on_sheet? <-- probably this
 # TODO: Bug: Switching from chess.com to lichess leaves peak columns in place
 #       - Separate Header object?
 # TODO: Do something about users doing multiple identical apply's?
@@ -25,10 +26,12 @@ from globals import *
 # TODO: More game types: 960, bughouse, etc. 4pc seems unavailable =/
 # TODO: Custom prefixes?
 # TODO: "Extra" column, for whatever data they want to pass?
-# TODO: "?join channel" available for mods of channel (nathan asked)
+# TODO: Provisional ratings
+
 
 # Backend/feelgood stuff:
 # TODO: Tests
+# TODO: The requests in ?join pipeline are sync. Switch to aiohttp?
 # TODO: More/Better Logging - Not very informative atm and some modules still missing
 # TODO: Tidy up error handling
 #       - Custom Command (at least) for apply, to use @error and separate away the error handling.
@@ -176,7 +179,7 @@ class SubBatBot(Bot):
     @command(name='leave')
     async def leave(self, ctx, channel_name=None):
         """leave - Make the bot leave the channel"""
-        if ctx.author.id != SED_ID:
+        if channel_name is None or ctx.author.id != SED_ID:
             channel_name = ctx.channel.name
         await self.leave_channel(channel_name)
         log.info(f"({ctx.channel.name}) Leaving {channel_name}")
@@ -267,14 +270,6 @@ class SubBatBot(Bot):
     @command(name='test', no_global_checks=True)
     async def test(self, ctx, channel=None):
         user = ctx.author.name
-        if channel is None:
-            print('Joining!')
-        elif user == channel or channel in get_moderated_channels(user):
-            print('Success!')
-        else:
-            await ctx.send(f"@{ctx.author.display_name} You don't appear to be a mod or owner of that channel. "
-                           "If you are, try again later or ask Sedsarq to send the bot there.")
-
 
     @command(name='apply', no_global_checks=True)
     async def apply(self, ctx, chess_name):
