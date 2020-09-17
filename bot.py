@@ -15,15 +15,15 @@ from globals import *
 
 
 # Frontend things:
-# TODO: Bug: Changing display name looks like a different user, giving multiple spots on sheet.
-#       - user id in users_on_sheet, and ID column on sheet?
-#       - Or just store lowercase name in users_on_sheet? <-- probably this
+# TODO: Bug: Changing username looks like a different user, giving multiple spots on sheet.
+#       - Would have to go by user id in users_on_sheet. ID column on sheet?
+#       - Currently goes by lowercased name, so display name changes doesn't give multiple spots
 # TODO: Bug: Switching from chess.com to lichess leaves peak columns in place
 #       - Separate Header object?
 # TODO: Do something about users doing multiple identical apply's?
 #       - basically self spamming, but also hogging resources
 # TODO: On format setting change, modify sheet accordingly
-# TODO: More game types: 960, bughouse, etc. 4pc seems unavailable =/
+# TODO: More game types? But 960 and 4pc seems unavailable =/ Among others I suppose
 # TODO: Custom prefixes?
 # TODO: "Extra" column, for whatever data they want to pass?
 # TODO: Provisional ratings

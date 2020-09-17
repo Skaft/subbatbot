@@ -104,7 +104,7 @@ class BattleSheet:
             'range': f"A1:{self.last_col}1",
             'values': [header]
         }
-        log.debug(f"{self.channel_name}: Created header {header}")
+        #log.debug(f"{self.channel_name}: Created header {header}")
 
     async def _connect_sheet(self):
         agc = await agcm.authorize()
