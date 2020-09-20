@@ -57,7 +57,7 @@ def refresh_token(db=None):
         'refresh_token': TOKEN['refresh_token'],
     }
     new_token = requests.post(TWITCH_REFRESH_URL, params=params).json()
-    log.debug(f"Refreshed token from {TOKEN['access_token'][:5]} to {new_token['refresh_token'][:5]}")
+    log.debug(f"Refreshed token from {TOKEN['access_token'][:5]} to {new_token['access_token'][:5]}")
     TOKEN.update(new_token)
     if db:
         db.update_token(TOKEN)
@@ -107,7 +107,7 @@ def make_private_req(url, method='get', attempts=0, db=None, json=False, **param
             return
         log.info(f"Token {token['access_token'][:5]} looks invalid")
         refresh_token(db)
-        return make_private_req(url, method=method, attempts=1, db=db, **params)
+        return make_private_req(url, method=method, attempts=1, db=db, json=json, **params)
     resp.raise_for_status()
     if json:
         return resp.json()
