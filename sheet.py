@@ -176,7 +176,7 @@ class BattleSheet:
         # replace user data
         if last_entry:
             prev_ws, prev_row_nr = last_entry
-            if ws == prev_ws:
+            if ws.title == prev_ws.title:
                 await self._replace(ws, prev_row_nr, row_values)
                 res = 'updated'
 
