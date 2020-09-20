@@ -173,8 +173,13 @@ class SubBatBot(Bot):
             return
         await ctx.send(f"Heading to /{channel_name}!")
         log.info(f"({ctx.channel.name}) Joining {channel_name}")
-        add_follow(username=channel_name, db=self.db)
         await self.join_channel(channel_name, greet=True)
+        try:
+            add_follow(username=channel_name, db=self.db)
+        except Exception as e:
+            msg = f"Tried to follow {channel_name} but failed!"
+            await self._whisper(user, msg, ctx)
+            log.error(e)
 
     @command(name='leave')
     async def leave(self, ctx, channel_name=None):
