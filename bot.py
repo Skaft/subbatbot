@@ -39,6 +39,13 @@ from globals import *
 # TODO: Figure out if the _nowait keyword should be used (is it operating in sync now?)
 # TODO: ?set procedure is icky
 #       -Maybe a @setting deco: verify value (pre) and update DB (post)
+# TODO: gspread_asyncio randomly spamming 429 errors (
+"""ERROR:gspread_asyncio:Gspread Error {'code': 429, 'message': "Quota exceeded for quota group 'ReadGroup'
+and limit 'Read requests per user per 100 seconds' of service 'sheets.googleapis.com' for consumer 'project_number:885487243158'.", 'status': 'RESOURCE_E
+XHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Google developer console API key', 'url': 'https://con
+sole.developers.google.com/project/885487243158/apiui/credential'}]}]} while calling col_values (1,) {'value_render_option': 'FORMATTED_VALUE'}. Sleeping
+ for 1.1 seconds."""
+
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -290,13 +297,14 @@ class SubBatBot(Bot):
             # regrabbing chess_name to (possibly) collect correct casing from lookup
             chess_name, rating, *peak_data = await api.lookup(chess_name, game_type)
         except UserNotFound:
-            await ctx.send(f"@{twitch_name}: Couldn't find player \"{chess_name}\" on {site}!")
+            msg = f"Lookup failed, couldn't find player \"{chess_name}\" on {site}!"
+            await self._whisper(user.name, msg, ctx)
         except APIError as e:
             log.error(f"({ctx.channel.name}) APIError: The lookup for {site}, {game_type}, {chess_name} resulted in '{e}'")
-            await ctx.send(f"@{twitch_name}: {e}")
+            await self._whisper(user.name, str(e), ctx)
         except Exception as e:
             log.exception(f"({ctx.channel.name}) Unexpected lookup fail: {site}, {game_type}, {chess_name} => {e}")
-            await ctx.send(f"Unexpected error, please let Sedsarq know!")
+            await ctx.send(f"Unexpected error! Who knows what happened, tbh.")
         else:
             result = await sheet.add_data(twitch_name, chess_name, rating, *peak_data, sub=sub)
             status = "subscriber" if sub else "non-subscriber"
