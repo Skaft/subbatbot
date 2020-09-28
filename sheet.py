@@ -60,7 +60,7 @@ class CustomAGCM(gspread_asyncio.AsyncioGspreadClientManager):
             asyncgspread.error(
                 f"Gspread Error, rate limit hit! Recorded calls: {self.ratelim_count}/100. Was calling {method.__name__} {args} {kwargs}. Sleeping for {self.gspread_delay} seconds."
             )
-        else
+        else:
             asyncgspread.error(
                 f"Gspread Error {e} while calling {method.__name__} {args} {kwargs}. Sleeping for {self.gspread_delay} seconds."
             )
