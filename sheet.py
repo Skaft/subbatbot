@@ -33,9 +33,11 @@ def get_creds():
 
 class CustomAGCM(gspread_asyncio.AsyncioGspreadClientManager):
     """Subclassed manager for logging access"""
+    gsp_calls = 0
 
     async def before_gspread_call(self, method, args, kwargs):
-        return
+        CustomAGCM.gsp_calls += 1
+        print(f"Gspread calls: {CustomAGCM.gsp_calls}, method: {method}, args: {args}")
 
     async def handle_gspread_error(self, e, method, args, kwargs):
         asyncgspread.error(
