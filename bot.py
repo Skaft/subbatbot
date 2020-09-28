@@ -80,6 +80,14 @@ def is_bot_channel(ctx):
     return ctx.channel.name.lower() == os.environ['BOT_NICK'].lower()
 
 
+class MissingSheetReference(KeyError):
+    """Raised when bot tries to fetch a BattleSheet from cache without finding it.
+
+    Usually caused by ?link used too soon after bot joins channel.
+    """
+    pass
+
+
 class SubBatBot(Bot):
 
     def __init__(self, *args, **kwargs):
@@ -97,6 +105,12 @@ class SubBatBot(Bot):
         docstrings = [cmd._callback.__doc__ for cmd in self.commands.values() if cmd.name in public_commands]
         command_help = '; '.join("${prefix}" + doc for doc in docstrings)
         self.help_msg_template = Template(f"Commands: {command_help}")
+
+    def get_sheet(self, channel_name):
+        sheet = self.sheets.get(channel_name)
+        if sheet is None:
+            raise MissingSheetReference(f"Bot has no sheet called {channel_name}")
+        return sheet
 
     async def event_ready(self):
         # session needs to be created in async function, hence not in __init__
@@ -155,7 +169,7 @@ class SubBatBot(Bot):
                 msg = f'{pre}apply username <-- Type this, using your own chess username, to apply!'
             # using set badly
             elif error.param.name == 'setting':
-                sheet = self.sheets[ctx.channel.name]
+                sheet = self.get_sheet(ctx.channel.name)
                 msg = f"Current settings: {sheet.current_settings}"
             elif error.param.name == 'value':
                 msg = BattleSheet.settings_help_string
@@ -163,6 +177,9 @@ class SubBatBot(Bot):
                 log.debug(f"({ctx.channel.name}) {name} caused '{error}' by typing '{ctx.message.content}'")
                 msg = str(error)
             return await ctx.send(msg)
+        elif isinstance(error, MissingSheetReference):
+            log.warning(f"({ctx.channel.name}) {name} caused: {error} by typing '{ctx.message.content}'")
+            return await ctx.send("No sheet found for this channel. If I just joined, it's under construction!")
         else:
             log.error(f"({ctx.channel.name}) {name} caused '{error}' by typing '{ctx.message.content}'")
         return await super().event_command_error(ctx, error)
@@ -200,15 +217,15 @@ class SubBatBot(Bot):
     async def clear(self, ctx):
         """clear - Reset the spreadsheet"""
         log.debug(f"({ctx.channel.name}) {ctx.author.display_name} uses ?clear")
-        sheet = self.sheets[ctx.channel.name]
+        sheet = self.get_sheet(ctx.channel.name)
         await sheet.clear()
 
     @command(name='link')
     async def link(self, ctx):
         """link - Post link to the spreadsheet"""
-        url = self.sheets[ctx.channel.name].url
+        url = self.get_sheet(ctx.channel.name).url
         user = ctx.author.name
-        msg = f"Find the {ctx.channel.name} sheet at {url}"
+        msg = f"Find the sheet for channel '{ctx.channel.name}' at {url}"
         await self._whisper(user, msg, ctx)
 
         log.debug(f"({ctx.channel.name}) {user} got the sheet link by whisper")
@@ -231,7 +248,7 @@ class SubBatBot(Bot):
         except ValueError:
             ctx.send('Use non-negative integer numbers for ticket counts, like ?draw 3 1.')
             return
-        sheet = self.sheets[ctx.channel.name]
+        sheet = self.get_sheet(ctx.channel.name)
         tickets = []
         for twitch_name, (ws, row) in sheet.users_on_sheet.items():
             if ws.title.lower() == 'subs':
@@ -254,7 +271,7 @@ class SubBatBot(Bot):
         """set setting value - Change settings. Use without arguments for current settings"""
         log.debug(f"({ctx.channel.name}) {ctx.author.display_name} sets {setting} to {value}")
         channel_name = ctx.channel.name
-        sheet = self.sheets[channel_name]
+        sheet = self.get_sheet(channel_name)
         try:
             set_method = getattr(sheet, f"set_{setting}")
             await set_method(value)
@@ -289,7 +306,7 @@ class SubBatBot(Bot):
         user = ctx.author
         twitch_name = user.display_name
         sub = user.is_subscriber or 'founder' in user.badges
-        sheet = self.sheets[ctx.channel.name]
+        sheet = self.get_sheet(ctx.channel.name)
         site = sheet.site
         api = self.apis[site]
         game_type = sheet.game
