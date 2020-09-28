@@ -4,10 +4,12 @@ from oauth2client import crypt, GOOGLE_REVOKE_URI
 import gspread_asyncio
 from gspread.exceptions import SpreadsheetNotFound
 
+from collections import Counter
 import asyncio
 from re import search
 import os
 import logging
+import time
 
 
 asyncgspread = logging.getLogger('gspread_asyncio')
@@ -33,16 +35,35 @@ def get_creds():
 
 class CustomAGCM(gspread_asyncio.AsyncioGspreadClientManager):
     """Subclassed manager for logging access"""
-    #gsp_calls = 0
+    gspread_errors = Counter()
+    ratelim_bin = None
+    ratelim_count = None
 
     async def before_gspread_call(self, method, args, kwargs):
-        #CustomAGCM.gsp_calls += 1
+        """Using this prelude to see if I can track the rate limit from this altitude,
+        or if there are repeat calls further down the line that this level can't see."""
+        bin = int(time.time() // 100)
+        if self.ratelim_bin != bin:
+            self.ratelim_bin = bin
+            self.ratelim_count = 0
+        self.ratelim_count += 1
+        #if self.ratelim_count > 95:
+        #    asyncgspread.warning(f"Close to rate limit: {self.ratelim_count}/100")
         #print(f"Gspread calls: {CustomAGCM.gsp_calls}, method: {method}, args: {args}")
 
     async def handle_gspread_error(self, e, method, args, kwargs):
-        asyncgspread.error(
-            f"Gspread Error {e} while calling {method.__name__} {args} {kwargs}. Sleeping for {self.gspread_delay} seconds."
-        )
+        code = e['code']
+        msg = e['message']
+        CustomAGCM.gspread_errors[code, msg] += 1
+        if code == 429:  # Google API's rate limiting
+            # noticed = self.ratelim_count >= 100
+            asyncgspread.error(
+                f"Gspread Error, rate limit hit! Recorded calls: {self.ratelim_count}/100. Was calling {method.__name__} {args} {kwargs}. Sleeping for {self.gspread_delay} seconds."
+            )
+        else
+            asyncgspread.error(
+                f"Gspread Error {e} while calling {method.__name__} {args} {kwargs}. Sleeping for {self.gspread_delay} seconds."
+            )
         await asyncio.sleep(self.gspread_delay)
 
     async def handle_requests_error(self, e, method, args, kwargs):
@@ -50,6 +71,10 @@ class CustomAGCM(gspread_asyncio.AsyncioGspreadClientManager):
             f"Req Error {e} while calling {method.__name__} {args} {kwargs}. Sleeping for {self.gspread_delay} seconds."
         )
         await asyncio.sleep(self.gspread_delay)
+
+    #async def _call(self, method, *args, **kwargs):
+    #    super()._call(method, *args, **kwargs)
+    #    errors = CustomAGCM.gspread_error_count
 
 
 agcm = CustomAGCM(get_creds)
