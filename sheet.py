@@ -57,14 +57,16 @@ class CustomAGCM(gspread_asyncio.AsyncioGspreadClientManager):
         CustomAGCM.gspread_errors[code] += 1
         if code == 429:  # Google API's rate limiting
             # noticed = self.ratelim_count >= 100
+            delay = 30
             asyncgspread.error(
-                f"Gspread Error, rate limit hit! Recorded calls: {self.ratelim_count}/100. Was calling {method.__name__} {args} {kwargs}. Sleeping for {self.gspread_delay} seconds."
+                f"Gspread Error, rate limit hit! Recorded calls: {self.ratelim_count}/100. Was calling {method.__name__} {args} {kwargs}. Sleeping for {delay} seconds."
             )
         else:
+            delay = self.gspread_delay
             asyncgspread.error(
-                f"Gspread Error {e} while calling {method.__name__} {args} {kwargs}. Sleeping for {self.gspread_delay} seconds."
+                f"Gspread Error {e} while calling {method.__name__} {args} {kwargs}. Sleeping for {delay} seconds."
             )
-        await asyncio.sleep(self.gspread_delay)
+        await asyncio.sleep(delay)
 
     async def handle_requests_error(self, e, method, args, kwargs):
         asyncgspread.error(
