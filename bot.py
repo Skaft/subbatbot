@@ -179,7 +179,7 @@ class SubBatBot(Bot):
             return await ctx.send(msg)
         elif isinstance(error, MissingSheetReference):
             log.warning(f"({ctx.channel.name}) {name} caused: {error} by typing '{ctx.message.content}'")
-            return await ctx.send("No sheet found for this channel. If I just joined, it's under construction!")
+            return await ctx.send("No sheet found for this channel. If I just joined or rebooted, try again soon!")
         else:
             log.error(f"({ctx.channel.name}) {name} caused '{error}' by typing '{ctx.message.content}'")
         return await super().event_command_error(ctx, error)

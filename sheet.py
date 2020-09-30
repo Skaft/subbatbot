@@ -52,8 +52,8 @@ class CustomAGCM(gspread_asyncio.AsyncioGspreadClientManager):
         #print(f"Gspread calls: {CustomAGCM.gsp_calls}, method: {method}, args: {args}")
 
     async def handle_gspread_error(self, e, method, args, kwargs):
-        code = e['code']
-        msg = e['message']
+        code = e.response['code']
+        msg = e.response['message']
         CustomAGCM.gspread_errors[code, msg] += 1
         if code == 429:  # Google API's rate limiting
             # noticed = self.ratelim_count >= 100
