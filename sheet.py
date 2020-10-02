@@ -96,7 +96,7 @@ class BattleSheet:
         self.last_col = None
         self._header_data = None
 
-        # dict of {username.lower(): (worksheet, row_nr)}.
+        # dict of {username.lower(): (worksheet_title, row_nr)}.
         # Lowercase names to avoid multiple entries by changing display_name
         self.users_on_sheet = {}
         self.url = None
@@ -204,13 +204,14 @@ class BattleSheet:
 
         # replace user data
         if last_entry:
-            prev_ws, prev_row_nr = last_entry
-            if ws.title == prev_ws.title:
+            prev_ws_title, prev_row_nr = last_entry
+            if ws.title == prev_ws_title:
                 await self._replace(ws, prev_row_nr, row_values)
                 res = 'updated'
 
             # user changed sub status
             else:
+                prev_ws = await sheet.worksheet(prev_ws_title)
                 await prev_ws.delete_row(prev_row_nr)
                 await self._append(ws, twitch_name, row_values)
                 res = "moved"
@@ -221,10 +222,11 @@ class BattleSheet:
         return res
 
     async def _append(self, ws, user_name, row_values):
-        log.debug(f"{self.channel_name}: Adding {user_name} to {ws.title}")
+        sheet_title = ws.title
+        log.debug(f"{self.channel_name}: Adding {user_name} to {sheet_title}")
         ret = await ws.append_row(row_values)
         row_nr = int(search(r'\d+$', ret['updates']['updatedRange']).group())
-        self.users_on_sheet[user_name.lower()] = ws, row_nr
+        self.users_on_sheet[user_name.lower()] = sheet_title, row_nr
 
     async def _replace(self, ws, row_nr, values):
         log.debug(f"{self.channel_name}: Replacing {ws.title} row {row_nr} with {values}")
@@ -241,12 +243,24 @@ class BattleSheet:
         if title in agc._ss_cache_title:
             del agc._ss_cache_title[title]  # gspread_asyncio forgot to remove sheet from this cache (v1.1.0)
 
+    async def batch_get(self, ranges, **params):
+        call = self.sheet.agcm._call
+        method = self.sheet.ss.values_batch_get
+        return await call(method, ranges, params=params)
+
     async def refresh_users(self):
         d = {}
-        worksheets = await self.sheet.worksheets()
-        for ws in worksheets:
-            twitch_name_col = await ws.col_values(1)
-            twitch_name_to_row_nr = {name.lower(): (ws, n) for n, name in enumerate(twitch_name_col[1:], 2)}
+        ranges = ["'Subs'!A2:A", "'Not subs'!A2:A"]
+        resp = await self.batch_get(ranges, majorDimension='COLUMNS')
+        for val_range in resp['valueRanges']:
+            sheet_name = val_range['range'].split('!')[0].strip("'")
+            if 'values' not in val_range:
+                continue
+            twitch_names = val_range['values'][0]
+            twitch_name_to_row_nr = {
+                name.lower(): (sheet_name, n)
+                for n, name in enumerate(twitch_names, 2)
+            }
             d.update(twitch_name_to_row_nr)
         log.debug(f"{self.channel_name}: Refreshed user dict from {len(self.users_on_sheet)} to {len(d)} users")
         self.users_on_sheet = d
@@ -260,6 +274,7 @@ class BattleSheet:
             ws.ws.format(self._header_data['range'], {"textFormat": {"bold": True}})
 
     async def clear(self):
+        # TODO: Batch update can probably reduce 3 API calls to 1 here
         log.debug(f"{self.channel_name}: Clearing sheet")
         worksheets = await self.sheet.worksheets()
         for ws in worksheets:
