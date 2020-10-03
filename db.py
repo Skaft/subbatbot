@@ -52,9 +52,10 @@ class SettingsDatabase:
             self.add_channel(channel)
             return {**SettingsDatabase.defaults, 'sheet_key': None}
 
-    def get_all_records(self):
+    def get_all_settings(self):
         self.cur.execute("SELECT * FROM settings;")
-        return self.cur.fetchall()
+        keys = (*SettingsDatabase.defaults.keys(), 'sheet_key')
+        return {t[0]: dict(zip(keys, t[1:])) for t in self.cur}
 
     def get_all_channels(self):
         self.cur.execute("SELECT channel FROM settings;")

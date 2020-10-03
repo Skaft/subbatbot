@@ -30,6 +30,7 @@ from globals import *
 
 
 # Backend/feelgood stuff:
+# TODO: ?clear = 3 API calls, refresh_headers = 5!
 # TODO: Tests
 # TODO: The requests in ?join pipeline are sync. Switch to aiohttp?
 # TODO: More/Better Logging - Not very informative atm and some modules still missing
@@ -124,13 +125,15 @@ class SubBatBot(Bot):
         else:
             channel_names = self.db.get_all_channels()
         log.debug(f"Found {len(channel_names)} channels to join")
+        all_settings = self.db.get_all_settings()
         for channel_name in channel_names:
-            await self.join_channel(channel_name, greet=DEV_MODE)
+            await self.join_channel(channel_name, greet=DEV_MODE, channel_settings=all_settings[channel_name])
         print(f"{os.environ['BOT_NICK']} is online!")
 
-    async def join_channel(self, channel_name, greet=False):
+    async def join_channel(self, channel_name, greet=False, channel_settings=None):
         await self.join_channels([channel_name])
-        channel_settings = self.db.get_settings(channel_name)
+        if channel_settings is None:
+            channel_settings = self.db.get_settings(channel_name)
         self.sheets[channel_name] = await BattleSheet.open(channel_name, channel_settings)
         if channel_settings['sheet_key'] is None:
             self.db.store_key(channel_name, self.sheets[channel_name].sheet_key)
