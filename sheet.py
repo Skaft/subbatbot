@@ -2,7 +2,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 from oauth2client import crypt, GOOGLE_REVOKE_URI
 
 import gspread_asyncio
-from gspread.exceptions import SpreadsheetNotFound
+import gspread
 
 from collections import Counter
 import asyncio
@@ -74,9 +74,32 @@ class CustomAGCM(gspread_asyncio.AsyncioGspreadClientManager):
         )
         await asyncio.sleep(self.gspread_delay)
 
-    #async def _call(self, method, *args, **kwargs):
-    #    super()._call(method, *args, **kwargs)
-    #    errors = CustomAGCM.gspread_error_count
+    async def _authorize(self):
+        now = self._loop.time()
+        if self.auth_time is None or self.auth_time + self.reauth_interval < now:
+            creds = await self._loop.run_in_executor(None, self.credentials_fn)
+            gc = await self._loop.run_in_executor(None, gspread.authorize, creds)
+            agc = CustomAGC(self, gc)
+            self._agc_cache[now] = agc
+            if self.auth_time in self._agc_cache:
+                del self._agc_cache[self.auth_time]
+            self.auth_time = now
+        else:
+            agc = self._agc_cache[self.auth_time]
+        return agc
+
+
+class CustomAGC(gspread_asyncio.AsyncioGspreadClient):
+    async def open_by_key(self, key, title=None):
+        if key in self._ss_cache_key:
+            return self._ss_cache_key[key]
+        ss = await self.agcm._call(self.gc.open_by_key, key)
+        ass = gspread_asyncio.AsyncioGspreadSpreadsheet(self.agcm, ss)
+        if title is None:
+            title = await ass.get_title()
+        self._ss_cache_title[title] = ass
+        self._ss_cache_key[key] = ass
+        return ass
 
 
 agcm = CustomAGCM(get_creds)
@@ -143,8 +166,12 @@ class BattleSheet:
     async def _connect_sheet(self):
         agc = await agcm.authorize()
         try:
-            self.sheet = await agc.open(self.channel_name)
-        except SpreadsheetNotFound:
+            if self.sheet_key:
+                self.sheet = await agc.open_by_key(self.sheet_key, self.channel_name)
+            else:
+                self.sheet = await agc.open(self.channel_name)
+                self.sheet_key = self.sheet.ss.id
+        except gspread.exceptions.SpreadsheetNotFound:
             log.info(f"{self.channel_name}: Didn't find sheet, making new")
             self.sheet = await self.new_sheet(self.channel_name)
             await self.refresh_headers()
