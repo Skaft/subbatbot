@@ -99,13 +99,19 @@ class BattleSheet:
         # dict of {username.lower(): (worksheet_title, row_nr)}.
         # Lowercase names to avoid multiple entries by changing display_name
         self.users_on_sheet = {}
+        self.sheet_key = settings.get('sheet_key')
         self.url = None
 
         # settings user can modify
         self.format = settings['format']
         self.site = settings['site']
         self.game = settings['game']
-        log.info(f"{channel_name}: Initialized BattleSheet with {settings}")
+
+        if self.sheet_key is None:
+            settings_summary = ', '.join(f'{key}={value}' for key, value in settings.items())
+        else:
+            settings_summary = ', '.join(f'{key}={value:.9}' for key, value in settings.items())
+        log.info(f"{channel_name}: Initialized BattleSheet with {settings_summary}")
 
     @property
     def current_settings(self):
@@ -133,7 +139,6 @@ class BattleSheet:
             'range': f"A1:{self.last_col}1",
             'values': [header]
         }
-        #log.debug(f"{self.channel_name}: Created header {header}")
 
     async def _connect_sheet(self):
         agc = await agcm.authorize()

@@ -38,14 +38,19 @@ class SettingsDatabase:
         sql = f"UPDATE settings SET {setting} = %s WHERE channel = %s;"
         self._commit(sql, (value, channel))
 
+    def store_key(self, channel, key):
+        self.update_setting(channel, 'sheet_key', key)
+
     def get_settings(self, channel):
-        self.cur.execute("SELECT * FROM settings WHERE channel = %s;", (channel,))
+        fields = [*SettingsDatabase.defaults.keys(), 'sheet_key']
+        fields_string = ', '.join(fields)
+        self.cur.execute(f"SELECT {fields_string} FROM settings WHERE channel = %s;", (channel,))
         stored = self.cur.fetchall()
         if stored:
-            return dict(zip(self.col_names[1:], stored[0][1:]))
+            return dict(zip(fields, stored[0]))
         else:
             self.add_channel(channel)
-            return {**SettingsDatabase.defaults}
+            return {**SettingsDatabase.defaults, 'sheet_key': None}
 
     def get_all_records(self):
         self.cur.execute("SELECT * FROM settings;")

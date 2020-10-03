@@ -132,6 +132,8 @@ class SubBatBot(Bot):
         await self.join_channels([channel_name])
         channel_settings = self.db.get_settings(channel_name)
         self.sheets[channel_name] = await BattleSheet.open(channel_name, channel_settings)
+        if channel_settings['sheet_key'] is None:
+            self.db.store_key(channel_name, self.sheets[channel_name].sheet_key)
         if greet:
             await self._ws.send_privmsg(channel_name, choice(greetings))
 
