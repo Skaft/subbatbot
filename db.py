@@ -18,20 +18,14 @@ class SettingsDatabase:
         else:
             self.conn = psycopg2.connect(db_conn_string, sslmode='require')
         self.cur = self.conn.cursor()
-        self._sql_insert_template = None
-        self.cur.execute("SELECT * FROM settings LIMIT 0;")
-        self.col_names = [desc.name for desc in self.cur.description]
-        self._make_templates()
-
-    def _make_templates(self):
-        # make sql string templates
-        cols = ', '.join(self.col_names)
-        placeholders = ', '.join(['%s'] * len(self.col_names))
-        self._sql_insert_template = f"INSERT INTO settings ({cols}) VALUES ({placeholders});"
 
     def add_channel(self, channel):
-        values = (channel, *SettingsDatabase.defaults.values())
-        self._commit(self._sql_insert_template, values)
+        defaults = SettingsDatabase.defaults
+        fields = ('channel', *defaults.keys())
+        values = (channel, *defaults.values())
+        placeholders = ', '.join(['%s'] * len(values))
+        sql = f"INSERT INTO settings ({fields}) VALUES ({placeholders});"
+        self._commit(sql, values)
 
     def delete_channel(self, channel):
         sql = "DELETE FROM settings WHERE channel = %s"
