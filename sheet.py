@@ -306,11 +306,12 @@ class BattleSheet:
             ws.ws.format(self._header_data['range'], {"textFormat": {"bold": True}})
 
     async def clear(self):
-        # TODO: Batch update can probably reduce 3 API calls to 1 here
         log.debug(f"{self.channel_name}: Clearing sheet")
-        worksheets = await self.sheet.worksheets()
-        for ws in worksheets:
-            await ws.clear()
+        call = self.sheet.agcm._call
+        method = self.sheet.ss.client.request
+        batch_clear_url = f"https://sheets.googleapis.com/v4/spreadsheets/{self.sheet_key}/values:batchClear"
+        body = {"ranges": ["'Subs'", "'Not subs'"]}
+        await call(method, 'post', batch_clear_url, json=body)
         await self.refresh_headers()
         self.users_on_sheet = {}
 

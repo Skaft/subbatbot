@@ -30,7 +30,7 @@ from globals import *
 
 
 # Backend/feelgood stuff:
-# TODO: ?clear = 3 API calls, refresh_headers = 5!
+# TODO: refresh_headers = 5 api calls!
 # TODO: Tests
 # TODO: The requests in ?join pipeline are sync. Switch to aiohttp?
 # TODO: More/Better Logging - Not very informative atm and some modules still missing
