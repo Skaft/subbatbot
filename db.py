@@ -21,10 +21,10 @@ class SettingsDatabase:
 
     def add_channel(self, channel):
         defaults = SettingsDatabase.defaults
-        fields = ('channel', *defaults.keys())
+        fields = ', '.join(('channel', *defaults.keys()))
         values = (channel, *defaults.values())
         placeholders = ', '.join(['%s'] * len(values))
-        sql = f"INSERT INTO settings {fields} VALUES {placeholders};"
+        sql = f"INSERT INTO settings ({fields}) VALUES ({placeholders});"
         self._commit(sql, values)
 
     def delete_channel(self, channel):
