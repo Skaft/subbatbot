@@ -136,8 +136,9 @@ class SubBatBot(Bot):
             channel_settings = self.db.get_settings(channel_name)
         self.sheets[channel_name] = await BattleSheet.open(channel_name, channel_settings)
         if channel_settings['sheet_key'] is None:
-            log.debug("No sheet key in store, updating db")
-            self.db.store_key(channel_name, self.sheets[channel_name].sheet_key)
+            sheet_key = self.sheets[channel_name].sheet_key
+            log.debug(f"({channel_name}) No sheet key in store, updating db with {sheet_key[:5]}")
+            self.db.store_key(channel_name, sheet_key)
         if greet:
             await self._ws.send_privmsg(channel_name, choice(greetings))
 
