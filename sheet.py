@@ -170,12 +170,12 @@ class BattleSheet:
                 self.sheet = await agc.open_by_key(self.sheet_key, self.channel_name)
             else:
                 self.sheet = await agc.open(self.channel_name)
-                self.sheet_key = self.sheet.ss.id
         except gspread.exceptions.SpreadsheetNotFound:
             log.info(f"{self.channel_name}: Didn't find sheet, making new")
             self.sheet = await self.new_sheet(self.channel_name)
             await self.refresh_headers()
         self.url = self.sheet.ss.url
+        self.sheet_key = self.sheet.ss.id
 
     @staticmethod
     async def new_sheet(sheet_name):
