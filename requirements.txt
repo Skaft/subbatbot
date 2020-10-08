@@ -20,7 +20,8 @@ requests==2.24.0
 requests-oauthlib==1.3.0
 rsa==4.6
 six==1.15.0
-twitchio==1.1.0
+# twitchio==1.1.0
+-e git+https://github.com/getCurrentThread/TwitchIO.git@3a5c6c4941dd8d661dbc123ba8b971825f6a3cfb#egg=twitchio
 typing-extensions==3.7.4.2
 urllib3==1.25.10
 websockets==8.1
