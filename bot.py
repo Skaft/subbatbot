@@ -22,6 +22,7 @@ from globals import *
 #       - Separate Header object?
 # TODO: Do something about users doing multiple identical apply's?
 #       - basically self spamming, but also hogging resources
+#       - Post a message in chat to say they've been noticed? Clears confusion if they don't see whispers
 # TODO: On format setting change, modify sheet accordingly
 # TODO: More game types? But 960 and 4pc seems unavailable =/ Among others I suppose
 # TODO: Custom prefixes?
@@ -310,6 +311,8 @@ class SubBatBot(Bot):
     @command(name='apply', no_global_checks=True)
     async def apply(self, ctx, chess_name):
         """apply chess_name - Add user and chess stats to spreadsheet"""
+        if chess_name == 'username':
+            return
         user = ctx.author
         twitch_name = user.display_name
         sub = user.is_subscriber or 'founder' in user.badges
