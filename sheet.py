@@ -245,6 +245,7 @@ class BattleSheet:
             else:
                 prev_ws = await sheet.worksheet(prev_ws_title)
                 await prev_ws.delete_row(prev_row_nr)
+                log.debug(f"{self.channel_name}:{prev_ws_title}:{prev_row_nr} Removed user {twitch_name}:{chess_name}")
                 await self._append(ws, twitch_name, row_values)
                 res = "moved"
         # append new row
@@ -253,19 +254,19 @@ class BattleSheet:
             res = "new"
         return res
 
-    async def _append(self, ws, user_name, row_values):
+    async def _append(self, ws, user_name, values):
         sheet_title = ws.title
-        log.debug(f"{self.channel_name}: Adding {user_name} to {sheet_title}")
-        ret = await ws.append_row(row_values)
+        ret = await ws.append_row(values)
         row_nr = int(search(r'\d+$', ret['updates']['updatedRange']).group())
         self.users_on_sheet[user_name.lower()] = sheet_title, row_nr
+        log.debug(f"{self.channel_name}:{sheet_title}:{row_nr} Added user {values[0]}:{values[1]}")
 
     async def _replace(self, ws, row_nr, values):
-        log.debug(f"{self.channel_name}: Replacing {ws.title} row {row_nr} with {values}")
         cells = await ws.range(f'A{row_nr}:{self.last_col}{row_nr}')
         for cell, value in zip(cells, values):
             cell.value = value
         await ws.update_cells(cells)
+        log.debug(f"{self.channel_name}:{ws.title}:{row_nr} Updated user {values[0]}:{values[1]}")
 
     async def remove(self):
         log.debug(f"{self.channel_name}: Deleting sheet")
