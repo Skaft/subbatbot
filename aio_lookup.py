@@ -4,6 +4,7 @@ A module for looking up blitz stats of players on chess.com.
 
 from aiohttp import ClientResponseError, ClientConnectionError
 from datetime import date
+import asyncio
 
 
 class APIError(Exception):
@@ -59,9 +60,10 @@ class ChessComAPI(API):
 
     async def _call(self, url):
         try:
-            async with self._session.get(url) as resp:
-                resp.raise_for_status()
-                return await resp.json()
+            async with self.lock:
+                async with self._session.get(url) as resp:
+                    resp.raise_for_status()
+                    return await resp.json()
         except ClientResponseError as e:
             if resp.status == 404:
                 # In the general case, 404 doesn't necessarily mean a *user* doesn't exist!
@@ -69,9 +71,9 @@ class ChessComAPI(API):
             elif resp.status == 410:
                 raise APIError("That request confused even chess.com.")
             elif resp.status == 429:
-                # hopefully this doesnt happen due to aiohttp playing nice
+                # hopefully this doesnt happen due to locks
                 self.log(f"Hit rate limit from chess.com!")
-                raise APIError("Too many requests; try again")
+                raise APIError("Too many requests; try again.")
             else:
                 self.log(f"Status code {resp.status} on requesting {url}:\n{e}")
                 raise
@@ -96,9 +98,10 @@ class LichessAPI(API):
 
     async def _call(self, url):
         try:
-            async with self._session.get(url) as resp:
-                resp.raise_for_status()
-                return await resp.json()
+            async with self.lock:
+                async with self._session.get(url) as resp:
+                    resp.raise_for_status()
+                    return await resp.json()
         except ClientResponseError as e:
             if e.status == 404:
                 raise UserNotFound
