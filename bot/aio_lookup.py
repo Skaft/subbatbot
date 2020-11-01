@@ -20,6 +20,7 @@ class API:
 
     def __init__(self, session):
         self._session = session
+        self.lock = asyncio.Lock()
 
     def log(*args):
         """Save info of unexpected errors"""
