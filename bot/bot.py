@@ -1,53 +1,16 @@
 import os
 from random import choice
 from string import Template
-import asyncio
 import logging
 
-from twitchio.ext.commands import Bot, command, errors, check
+from twitchio.ext.commands import Bot, errors
 import aiohttp
 
 from aio_lookup import ChessComAPI, LichessAPI, APIError, UserNotFound
 from sheet import BattleSheet
 from db import SettingsDatabase
-from twitch_api import add_follow, get_moderated_channels
 from exts import checks
 from globals import *
-
-
-# Frontend things:
-# TODO: Bug: Changing username looks like a different user, giving multiple spots on sheet.
-#       - Would have to go by user id in users_on_sheet. ID column on sheet?
-#       - Currently goes by lowercased name, so display name changes doesn't give multiple spots
-# TODO: Bug: Switching from chess.com to lichess leaves peak columns in place
-#       - Separate Header object?
-# TODO: Do something about users doing multiple identical apply's?
-#       - basically self spamming, but also hogging resources
-#       - Post a message in chat to say they've been noticed? Clears confusion if they don't see whispers
-# TODO: On format setting change, modify sheet accordingly
-# TODO: More game types? But 960 and 4pc seems unavailable =/ Among others I suppose
-# TODO: Custom prefixes?
-# TODO: "Extra" column, for whatever data they want to pass?
-# TODO: Provisional ratings
-
-
-# Backend/feelgood stuff:
-# TODO: refresh_headers = 5 api calls!
-# TODO: Tests
-# TODO: The requests in ?join pipeline are sync. Switch to aiohttp?
-# TODO: More/Better Logging - Not very informative atm and some modules still missing
-# TODO: Tidy up error handling
-#       - Custom Command (at least) for apply, to use @error and separate away the error handling.
-#       - DB has nothing atm
-# TODO: Figure out if the _nowait keyword should be used (is it operating in sync now?)
-# TODO: ?set procedure is icky
-#       -Maybe a @setting deco: verify value (pre) and update DB (post)
-# TODO: gspread_asyncio randomly spamming 429 errors (
-"""ERROR:gspread_asyncio:Gspread Error {'code': 429, 'message': "Quota exceeded for quota group 'ReadGroup'
-and limit 'Read requests per user per 100 seconds' of service 'sheets.googleapis.com' for consumer 'project_number:885487243158'.", 'status': 'RESOURCE_E
-XHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Google developer console API key', 'url': 'https://con
-sole.developers.google.com/project/885487243158/apiui/credential'}]}]} while calling col_values (1,) {'value_render_option': 'FORMATTED_VALUE'}. Sleeping
- for 1.1 seconds."""
 
 
 
@@ -144,7 +107,7 @@ class SubBatBot(Bot):
             return
         try:
             await self.handle_commands(msg)
-        except errors.MissingRequiredArgument as e:  # TODO: <-- why is this here?
+        except errors.MissingRequiredArgument as e:  # <-- why is this here? event_command_error is a thing.
             log.error(f"({msg.channel.name}) Missing req argument box! {msg.author.display_name} posted {msg.content}")
             print(e)
 
@@ -186,9 +149,8 @@ class SubBatBot(Bot):
     async def _whisper(self, user, msg, ctx):
         if self.nick == 'sbbdev':
             if ctx is None:
-                log.error("Dev bot was asked to whisper, and don't know where to send the message instead")
+                log.error("Dev bot was asked to whisper, and has no backup context to send to")
                 return
             await ctx.send(f"@{user}: {msg}")
         else:
             await self._ws._websocket.send(f"PRIVMSG #jtv :/w {user} {msg}")
-

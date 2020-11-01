@@ -1,3 +1,9 @@
+"""
+Google Sheet-related code goes here!
+
+Contains customizations for gspread_asyncio, and mainly the BattleSheet object which the bot talks to.
+"""
+
 from oauth2client.service_account import ServiceAccountCredentials
 from oauth2client import crypt, GOOGLE_REVOKE_URI
 
@@ -34,7 +40,9 @@ def get_creds():
 
 
 class CustomAGCM(gspread_asyncio.AsyncioGspreadClientManager):
-    """Subclassed manager for logging access"""
+    """Subclassed manager for logging access.
+
+    Also needed to create the custom client, on authorization"""
     gspread_errors = Counter()
     ratelim_bin = None
     ratelim_count = None
@@ -90,6 +98,10 @@ class CustomAGCM(gspread_asyncio.AsyncioGspreadClientManager):
 
 
 class CustomAGC(gspread_asyncio.AsyncioGspreadClient):
+    """
+    Extends the gspread_asyncio client by adding the `title` keyword, in order to skip a
+    redundant API call when the sheet title is already known.
+    """
     async def open_by_key(self, key, title=None):
         if key in self._ss_cache_key:
             return self._ss_cache_key[key]
@@ -195,7 +207,6 @@ class BattleSheet:
             raise ValueError("Available formats: " + ', '.join(formats))
         self.format = value
         log.debug(f"{self.channel_name}: Switched format to {value}")
-        # TODO: update column here
 
     async def set_site(self, value):
         if value == self.site:
@@ -303,7 +314,6 @@ class BattleSheet:
         worksheets = await self.sheet.worksheets()
         for ws in worksheets:
             await ws.batch_update([self._header_data])
-            # TODO: can this formatting line be awaited?
             ws.ws.format(self._header_data['range'], {"textFormat": {"bold": True}})
 
     async def clear(self):

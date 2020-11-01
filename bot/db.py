@@ -1,3 +1,7 @@
+"""
+PostgreSQL Database interface.
+"""
+
 import os
 import psycopg2
 

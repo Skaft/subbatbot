@@ -123,6 +123,3 @@ def get_moderated_channels(user):
     dct = r.json()
     return {ch['name'] for ch in dct['channels']}
 
-
-if __name__ == '__main__':
-    pass
