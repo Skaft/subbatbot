@@ -1,7 +1,7 @@
 import os
 import psycopg2
 
-from globals import DEV_MODE
+from bot.globals import DEV_MODE
 
 
 class SettingsDatabase:

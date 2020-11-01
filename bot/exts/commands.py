@@ -1,11 +1,11 @@
 from twitchio.ext.commands import command, check
 from twitchio.ext.commands.core import cog
 
-from aio_lookup import APIError, UserNotFound
-from twitch_api import add_follow, get_moderated_channels
-from globals import *
-from exts import checks
-from sheet import BattleSheet
+from bot.aio_lookup import APIError, UserNotFound
+from bot.twitch_api import add_follow, get_moderated_channels
+from bot.globals import *
+from bot.exts import checks
+from bot.sheet import BattleSheet
 
 import logging
 log = logging.getLogger(__name__)

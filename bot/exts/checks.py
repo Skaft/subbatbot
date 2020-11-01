@@ -1,5 +1,7 @@
 import os
-from globals import *
+
+from bot.globals import *
+
 
 def mod_or_sed(ctx):
     user = ctx.author

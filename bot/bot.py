@@ -7,12 +7,12 @@ import logging
 from twitchio.ext.commands import Bot, command, errors, check
 import aiohttp
 
-from aio_lookup import ChessComAPI, LichessAPI, APIError, UserNotFound
-from sheet import BattleSheet
-from db import SettingsDatabase
-from twitch_api import add_follow, get_moderated_channels
-from exts import checks
-from globals import *
+from bot.aio_lookup import ChessComAPI, LichessAPI, APIError, UserNotFound
+from bot.sheet import BattleSheet
+from bot.db import SettingsDatabase
+from bot.twitch_api import add_follow, get_moderated_channels
+from bot.exts import checks
+from bot.globals import *
 
 
 # Frontend things:

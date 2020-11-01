@@ -8,7 +8,7 @@ oAuth process:
 
 import os
 import requests
-from globals import *
+from bot.globals import *
 import logging
 from functools import lru_cache
 
