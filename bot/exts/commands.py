@@ -1,11 +1,11 @@
 from twitchio.ext.commands import command, check
 from twitchio.ext.commands.core import cog
 
-from bot.aio_lookup import APIError, UserNotFound
-from bot.twitch_api import add_follow, get_moderated_channels
-from bot.globals import *
-from bot.exts import checks
-from bot.sheet import BattleSheet
+from aio_lookup import APIError, UserNotFound
+from twitch_api import add_follow, get_moderated_channels
+from globals import *
+from exts import checks
+from sheet import BattleSheet
 
 import logging
 log = logging.getLogger(__name__)
@@ -68,37 +68,6 @@ class Commands:
         """help - Provide some assistance"""
         log.debug(f"({ctx.channel.name}) {ctx.author.display_name} uses ?help")
         await ctx.send(self.bot.help_msg_template.substitute(prefix=ctx.prefix))
-
-    # disabled command. Should it be a thing? Current version untested.
-    # @command(name='draw')
-#    async def draw(self, ctx, sub_tickets=3, pleb_tickets=1):
-#        log.debug(f"({ctx.channel.name}) {ctx.author.display_name} uses ?draw {sub_tickets} {pleb_tickets}")
-#        try:
-#            sub_tickets = int(sub_tickets)
-#            pleb_tickets = int(pleb_tickets)
-#            if sub_tickets < 0 or pleb_tickets < 0:
-#                raise ValueError
-#        except ValueError:
-#            ctx.send('Use non-negative integer numbers for ticket counts, like ?draw 3 1.')
-#            return
-#        sheet = self.get_sheet(ctx.channel.name)
-#        tickets = []
-#        for twitch_name, (ws, row) in sheet.users_on_sheet.items():
-#            if ws.title.lower() == 'subs':
-#                tickets.extend([twitch_name] * sub_tickets)
-#            else:
-#                tickets.extend([twitch_name] * pleb_tickets)
-#        if not tickets:
-#            await ctx.send("No names to draw a winner from!")
-#        else:
-#            winner = choice(tickets)
-#            is_sub = sheet.users_on_sheet[winner][0].title.lower() == 'subs'
-#            n_tickets = sub_tickets if is_sub else pleb_tickets
-#            ticket_str = f"{n_tickets} ticket" if n_tickets == 1 else f"{n_tickets} tickets"
-#            await ctx.send(
-#                f"/me Out of {len(sheet.users_on_sheet)} players, and a total number of {len(tickets)} tickets, the winner is... *drumroll* ...")
-#            await asyncio.sleep(10)
-#            await ctx.send(f"/me ... {winner}, who entered with {ticket_str}! Congratulations!")
 
     @command(name='set')
     async def set(self, ctx, setting: str, value: str):

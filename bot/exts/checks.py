@@ -1,6 +1,6 @@
 import os
 
-from bot.globals import *
+from globals import *
 
 
 def mod_or_sed(ctx):
