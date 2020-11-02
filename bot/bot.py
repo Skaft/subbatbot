@@ -6,11 +6,11 @@ import logging
 from twitchio.ext.commands import Bot, errors
 import aiohttp
 
-from aio_lookup import ChessComAPI, LichessAPI, APIError, UserNotFound
+from aio_lookup import ChessComAPI, LichessAPI
 from sheet import BattleSheet
 from db import SettingsDatabase
 from exts import checks
-from globals import *
+from globals import DEV_MODE, USER_BLACKLIST
 
 
 

@@ -7,10 +7,13 @@ oAuth process:
 """
 
 import os
-import requests
-from globals import *
 import logging
 from functools import lru_cache
+
+import requests
+
+from globals import DEV_MODE, SBB_ID, SBBD_ID
+
 
 
 TWITCH_AUTH_URL = "https://id.twitch.tv/oauth2/authorize"
